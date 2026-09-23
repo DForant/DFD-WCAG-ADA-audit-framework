@@ -16,8 +16,10 @@ A lightweight, automated digital accessibility audit and remediation framework d
 
 ## Architecture Overview
 
-Text
+
 ```
+Text
+
 [ Target URL Input ]
          │
          ▼
