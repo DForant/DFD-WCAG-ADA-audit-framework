@@ -1,0 +1,8 @@
+/ror
+
+# VS Code
+*.code-workspace
+
+# node
+/node_modules
+
