@@ -2,7 +2,7 @@ name: AI Issue Resolver & Automated PR
 
 on:
   issues:
-    types: [labeled]
+    types: [opened, labeled]
 
 permissions:
   contents: write
@@ -11,11 +11,18 @@ permissions:
 
 jobs:
   resolve-issue:
-    # Trigger only when an issue is labeled with 'ai-task'
-    if: github.event.label.name == 'ai-task'
+    # Checks if 'ai-task' is in the issue's label list, whether added at creation or labeled later
+    if: contains(github.event.issue.labels.*.name, 'ai-task')
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug Event Payload
+        run: |
+          echo "Event Name: ${{ github.event_name }}"
+          echo "Action: ${{ github.event.action }}"
+          echo "Issue Number: ${{ github.event.issue.number }}"
+          echo "Labels: ${{ join(github.event.issue.labels.*.name, ', ') }}"
+
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
@@ -30,7 +37,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Install Playwright Browsers (if required for tests)
+      - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
       - name: Run AI Resolution Script
@@ -74,5 +81,5 @@ jobs:
 
             **Implemented Fix:**
             This Pull Request was autonomously generated using Google AI Studio. 
-            All automated tests (`npm test`) have executed and passed successfully.
+            All automated tests (\`npm test\`) have executed and passed successfully.
           labels: "automated-pr, ready-for-review"
