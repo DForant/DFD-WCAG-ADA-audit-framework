@@ -11,7 +11,6 @@ permissions:
 
 jobs:
   resolve-issue:
-    # Checks if 'ai-task' is in the issue's label list, whether added at creation or labeled later
     if: contains(github.event.issue.labels.*.name, 'ai-task')
     runs-on: ubuntu-latest
 
@@ -71,6 +70,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          base: master
           commit-message: "fix(agent): automated remediation for #${{ github.event.issue.number }}"
           branch: "ai-fix/issue-${{ github.event.issue.number }}"
           delete-branch: true
@@ -81,5 +81,5 @@ jobs:
 
             **Implemented Fix:**
             This Pull Request was autonomously generated using Google AI Studio. 
-            All automated tests (\`npm test\`) have executed and passed successfully.
+            All automated tests (`npm test`) have executed and passed successfully.
           labels: "automated-pr, ready-for-review"
