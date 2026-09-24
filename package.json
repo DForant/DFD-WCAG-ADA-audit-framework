@@ -1,6 +1,7 @@
 {
+  "type": "module",
   "scripts": {
-    "test": "node --check scanner.js normalizer.js reporter.js"
+    "test": "node --test"
   },
   "devDependencies": {
     "@google/genai": "^2.24.0"
