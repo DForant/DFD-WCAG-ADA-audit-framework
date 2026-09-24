@@ -45,7 +45,7 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
-        run: node scripts/agent-runner.mjs
+        run: node .github/scripts/agent-runner.mjs
 
       - name: Run Test Verification Suite
         id: test_run
