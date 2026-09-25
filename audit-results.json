@@ -1,0 +1,29 @@
+{
+  "scanTarget": "https://test.local",
+  "timestamp": "2026-09-25T04:16:57.081Z",
+  "summary": {
+    "critical": 1,
+    "serious": 1,
+    "moderate": 0,
+    "minor": 0,
+    "total": 2
+  },
+  "violations": [
+    {
+      "id": "img-alt",
+      "impact": "critical",
+      "wcag": "unknown",
+      "description": "",
+      "helpUrl": "",
+      "nodes": []
+    },
+    {
+      "id": "contrast",
+      "impact": "serious",
+      "wcag": "unknown",
+      "description": "",
+      "helpUrl": "",
+      "nodes": []
+    }
+  ]
+}
