@@ -1,29 +1,12 @@
 {
-  "scanTarget": "https://test.local",
-  "timestamp": "2026-09-25T04:20:09.425Z",
+  "scanTarget": "https://example.com",
+  "timestamp": "2023-01-01T00:00:00.000Z",
   "summary": {
-    "critical": 1,
-    "serious": 1,
+    "critical": 0,
+    "serious": 0,
     "moderate": 0,
     "minor": 0,
-    "total": 2
+    "total": 0
   },
-  "violations": [
-    {
-      "id": "img-alt",
-      "impact": "critical",
-      "wcag": "unknown",
-      "description": "",
-      "helpUrl": "",
-      "nodes": []
-    },
-    {
-      "id": "contrast",
-      "impact": "serious",
-      "wcag": "unknown",
-      "description": "",
-      "helpUrl": "",
-      "nodes": []
-    }
-  ]
+  "violations": []
 }
