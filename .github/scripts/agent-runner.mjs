@@ -67,7 +67,7 @@ function runVerificationSuite() {
 
 async function askAgent(prompt) {
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-pro',
+    model: 'gemini-3.5-flash-lite',
     contents: prompt,
     config: {
       systemInstruction: `
