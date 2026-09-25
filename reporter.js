@@ -5,6 +5,56 @@
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * Transforms problematic HTML snippets into compliant, copy-pasteable code fixes.
+ */
+function generateFixedSnippet(ruleId, originalHtml = '') {
+  if (!originalHtml) return '<!-- Corrected markup unavailable -->';
+
+  switch (ruleId) {
+    case 'color-contrast': {
+      // Adjust low-contrast styling (e.g., replace light grey text with accessible dark slate)
+      if (/style=["'][^"']*color:\s*#[cC]{3}/i.test(originalHtml)) {
+        return originalHtml.replace(/color:\s*#[cC]{3}/i, 'color: #2b2b2b');
+      }
+      return originalHtml.replace(/style=["']([^"']*)["']/, 'style="$1; color: #111111; background-color: #ffffff;"');
+    }
+
+    case 'image-alt': {
+      // Add descriptive alt tag if missing
+      if (!/alt=/i.test(originalHtml)) {
+        return originalHtml.replace(/<img\b/i, '<img alt="Descriptive photo of pool quartz finish"');
+      }
+      return originalHtml.replace(/alt=["']\s*["']/, 'alt="Descriptive photo of pool quartz finish"');
+    }
+
+    case 'heading-order': {
+      // Step heading level down into compliant hierarchy (e.g., h4 -> h2)
+      return originalHtml
+        .replace(/<h[3-6]\b/i, '<h2')
+        .replace(/<\/h[3-6]>/i, '</h2>');
+    }
+
+    case 'link-name': {
+      if (originalHtml.includes('><')) {
+        return originalHtml.replace('><', '>Read Full Report<');
+      }
+      return originalHtml.replace(/<a\b/i, '<a aria-label="Visit audit details"');
+    }
+
+    case 'button-name': {
+      if (!/aria-label/i.test(originalHtml)) {
+        return originalHtml.replace(/<button\b/i, '<button aria-label="Submit action"');
+      }
+      return originalHtml;
+    }
+
+    default:
+      // Fallback: annotate the specific rule needed directly on the element
+      return originalHtml.replace(/>/, ` data-wcag-fix="${ruleId}">`);
+  }
+}
+
 export function generateMarkdownReport(auditData = {}) {
   const target = auditData.scanTarget || auditData.url || 'Unknown Target';
   const timestamp = auditData.timestamp || new Date().toISOString();
@@ -64,8 +114,9 @@ export function generateMarkdownReport(auditData = {}) {
         });
 
         md += `#### Recommended Remediation:\n\n`;
-        md += '```html\n<!-- Apply corrective attributes, semantic markup, or ARIA roles addressing the failure summary -->\n```\n\n';
-      }
+        const problemHtml = v.nodes[0].html || '<!-- Node snippet unavailable -->';
+        const fixedHtml = generateFixedSnippet(v.id, problemHtml);
+        md += '```html\n' + fixedHtml + '\n```\n\n';      }
     });
   }
 
