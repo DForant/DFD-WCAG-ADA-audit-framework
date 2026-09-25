@@ -1,9 +1,16 @@
 {
+  "name": "dfd-wcag-ada-audit-framework",
+  "description": "A framework for auditing web content for WCAG and ADA compliance",
+  "author": "Dean Forant",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "lint": "eslint .",
+    "test": "node --test",
+    "verify": "npm run lint && npm run test"
   },
   "devDependencies": {
     "@google/genai": "^2.24.0"
+    "eslint": "^9.0.0"
   }
 }
