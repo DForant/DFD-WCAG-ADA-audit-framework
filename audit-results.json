@@ -1,6 +1,6 @@
 {
-  "scanTarget": "https://test.local",
-  "timestamp": "2026-09-25T04:20:09.425Z",
+  "scanTarget": "https://deanforantdesigns.com/",
+  "timestamp": "2026-09-25T16:37:04.537Z",
   "summary": {
     "critical": 1,
     "serious": 1,
@@ -10,20 +10,77 @@
   },
   "violations": [
     {
-      "id": "img-alt",
+      "id": "aria-allowed-attr",
       "impact": "critical",
-      "wcag": "unknown",
-      "description": "",
-      "helpUrl": "",
-      "nodes": []
+      "wcag": "wcag2a, wcag412",
+      "description": "Ensure an element's role supports its ARIA attributes",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/aria-allowed-attr?application=playwright",
+      "nodes": [
+        {
+          "target": ".process-tabs__tab--active",
+          "html": "<button class=\"process-tabs__tab process-tabs__tab--active\" data-tab=\"discover\" aria-selected=\"true\">\n                                <span class=\"process-tabs__number\">01</span>\n                                <span class=\"process-tabs__label\">Discover</span>\n                            </button>",
+          "failureSummary": "Fix all of the following:\n  ARIA attribute is not allowed: aria-selected=\"true\""
+        },
+        {
+          "target": "button[data-tab=\"define\"]",
+          "html": "<button class=\"process-tabs__tab\" data-tab=\"define\" aria-selected=\"false\">\n                                <span class=\"process-tabs__number\">02</span>\n                                <span class=\"process-tabs__label\">Define</span>\n                            </button>",
+          "failureSummary": "Fix all of the following:\n  ARIA attribute is not allowed: aria-selected=\"false\""
+        },
+        {
+          "target": "button[data-tab=\"design\"]",
+          "html": "<button class=\"process-tabs__tab\" data-tab=\"design\" aria-selected=\"false\">\n                                <span class=\"process-tabs__number\">03</span>\n                                <span class=\"process-tabs__label\">Design</span>\n                            </button>",
+          "failureSummary": "Fix all of the following:\n  ARIA attribute is not allowed: aria-selected=\"false\""
+        },
+        {
+          "target": "button[data-tab=\"develop\"]",
+          "html": "<button class=\"process-tabs__tab\" data-tab=\"develop\" aria-selected=\"false\">\n                                <span class=\"process-tabs__number\">04</span>\n                                <span class=\"process-tabs__label\">Develop</span>\n                            </button>",
+          "failureSummary": "Fix all of the following:\n  ARIA attribute is not allowed: aria-selected=\"false\""
+        },
+        {
+          "target": "button[data-tab=\"deploy\"]",
+          "html": "<button class=\"process-tabs__tab\" data-tab=\"deploy\" aria-selected=\"false\">\n                                <span class=\"process-tabs__number\">05</span>\n                                <span class=\"process-tabs__label\">Deploy</span>\n                            </button>",
+          "failureSummary": "Fix all of the following:\n  ARIA attribute is not allowed: aria-selected=\"false\""
+        },
+        {
+          "target": "button[data-tab=\"debrief\"]",
+          "html": "<button class=\"process-tabs__tab\" data-tab=\"debrief\" aria-selected=\"false\">\n                                <span class=\"process-tabs__number\">06</span>\n                                <span class=\"process-tabs__label\">Debrief</span>\n                            </button>",
+          "failureSummary": "Fix all of the following:\n  ARIA attribute is not allowed: aria-selected=\"false\""
+        }
+      ]
     },
     {
-      "id": "contrast",
+      "id": "color-contrast",
       "impact": "serious",
-      "wcag": "unknown",
-      "description": "",
-      "helpUrl": "",
-      "nodes": []
+      "wcag": "wcag2aa, wcag143",
+      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+      "nodes": [
+        {
+          "target": "button[data-tab=\"define\"] > .process-tabs__number",
+          "html": "<span class=\"process-tabs__number\">02</span>",
+          "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.65 (foreground color: #4a6c9b, background color: #cbd6e6, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": "button[data-tab=\"design\"] > .process-tabs__number",
+          "html": "<span class=\"process-tabs__number\">03</span>",
+          "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.65 (foreground color: #4a6c9b, background color: #cbd6e6, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": "button[data-tab=\"develop\"] > .process-tabs__number",
+          "html": "<span class=\"process-tabs__number\">04</span>",
+          "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.65 (foreground color: #4a6c9b, background color: #cbd6e6, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": "button[data-tab=\"deploy\"] > .process-tabs__number",
+          "html": "<span class=\"process-tabs__number\">05</span>",
+          "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.65 (foreground color: #4a6c9b, background color: #cbd6e6, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "target": "button[data-tab=\"debrief\"] > .process-tabs__number",
+          "html": "<span class=\"process-tabs__number\">06</span>",
+          "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 3.65 (foreground color: #4a6c9b, background color: #cbd6e6, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ]
     }
   ]
 }

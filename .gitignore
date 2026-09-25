@@ -6,3 +6,5 @@
 # node
 /node_modules
 
+# Remediation Report
+REMEDIATION_REPORT.MD

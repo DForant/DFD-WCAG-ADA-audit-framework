@@ -10,25 +10,33 @@ import path from 'path';
 export async function runScan(targetUrl) {
   let urlToScan = targetUrl;
 
+  // 1. Resolve URL from CLI argument or targets.json if not passed directly
   if (!urlToScan) {
     try {
       const targetsPath = path.resolve(process.cwd(), 'targets.json');
       if (fs.existsSync(targetsPath)) {
-        const targetsData = JSON.parse(fs.readFileSync(targetsPath, 'utf8'));
-        if (Array.isArray(targetsData) && targetsData.length > 0) {
-          urlToScan = targetsData[0].url || targetsData[0];
-        } else if (targetsData.url) {
-          urlToScan = targetsData.url;
+        const rawJson = fs.readFileSync(targetsPath, 'utf8');
+        const parsed = JSON.parse(rawJson);
+
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          urlToScan = parsed[0].url || parsed[0];
+        } else if (Array.isArray(parsed.targets) && parsed.targets.length > 0) {
+          urlToScan = parsed.targets[0].url || parsed.targets[0];
+        } else if (parsed.url) {
+          urlToScan = parsed.url;
         }
       }
     } catch (err) {
-      // Fallback if targets.json parsing fails
+      console.warn(`[scanner] Failed to read targets.json: ${err.message}`);
     }
   }
 
+  // 2. Final fallbacks
   if (!urlToScan) {
-    urlToScan = process.argv[2] || 'http://localhost:3000';
+    urlToScan = process.argv[2] || 'https://deanforantdesigns.com';
   }
+
+  console.log(`[scanner] Initiating scan for: ${urlToScan}`);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -37,19 +45,27 @@ export async function runScan(targetUrl) {
   const page = await context.newPage();
 
   try {
-    await page.goto(urlToScan, { waitUntil: 'networkidle', timeout: 30000 });
+    // Navigate with a resilient load strategy
+    await page.goto(urlToScan, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    await page.waitForTimeout(2000);
   } catch (err) {
-    // If networkidle times out, attempt to proceed with whatever is loaded
+    console.error(`[scanner] Fatal navigation error to ${urlToScan}: ${err.message}`);
+    await browser.close();
+    throw new Error(`Failed to navigate to target URL: ${urlToScan} (${err.message})`);
   }
 
+  // Run Axe after page stabilization
   const axeResults = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze();
 
+  const finalUrl = page.url();
   await browser.close();
 
   return {
-    url: urlToScan,
+    url: finalUrl || urlToScan,
     timestamp: new Date().toISOString(),
     violations: axeResults.violations || [],
     passes: axeResults.passes || [],
