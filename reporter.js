@@ -12,16 +12,27 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
   if (!originalHtml) return '<!-- Corrected markup unavailable -->';
 
   switch (ruleId) {
-    case 'color-contrast': {
-      // Adjust low-contrast styling (e.g., replace light grey text with accessible dark slate)
-      if (/style=["'][^"']*color:\s*#[cC]{3}/i.test(originalHtml)) {
-        return originalHtml.replace(/color:\s*#[cC]{3}/i, 'color: #2b2b2b');
+    case 'aria-allowed-attr': {
+      // Buttons with aria-selected must have role="tab" to be valid WAI-ARIA
+      if (/aria-selected/i.test(originalHtml) && !/role=["']tab["']/i.test(originalHtml)) {
+        return originalHtml.replace(/<button\b/i, '<button role="tab"');
       }
-      return originalHtml.replace(/style=["']([^"']*)["']/, 'style="$1; color: #111111; background-color: #ffffff;"');
+      return originalHtml;
+    }
+
+    case 'color-contrast': {
+      // 1. If an inline style already exists, update color or append dark slate (#1f2937 has > 7:1 ratio)
+      if (/style=["']/i.test(originalHtml)) {
+        if (/color:\s*[^;"]+/i.test(originalHtml)) {
+          return originalHtml.replace(/color:\s*[^;"]+/i, 'color: #1f2937');
+        }
+        return originalHtml.replace(/style=["']([^"']*)["']/, 'style="$1; color: #1f2937;"');
+      }
+      // 2. If styling is inherited from external classes, inject a compliant high-contrast color directly
+      return originalHtml.replace(/<([a-zA-Z0-9]+)\b/, '<$1 style="color: #1a365d;"');
     }
 
     case 'image-alt': {
-      // Add descriptive alt tag if missing
       if (!/alt=/i.test(originalHtml)) {
         return originalHtml.replace(/<img\b/i, '<img alt="Descriptive photo of pool quartz finish"');
       }
@@ -29,7 +40,6 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
     }
 
     case 'heading-order': {
-      // Step heading level down into compliant hierarchy (e.g., h4 -> h2)
       return originalHtml
         .replace(/<h[3-6]\b/i, '<h2')
         .replace(/<\/h[3-6]>/i, '</h2>');
@@ -50,7 +60,6 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
     }
 
     default:
-      // Fallback: annotate the specific rule needed directly on the element
       return originalHtml.replace(/>/, ` data-wcag-fix="${ruleId}">`);
   }
 }
