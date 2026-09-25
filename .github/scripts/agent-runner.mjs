@@ -69,29 +69,36 @@ async function askAgent(prompt) {
   const response = await ai.models.generateContent({
     model: 'gemini-3.5-flash-lite',
     contents: prompt,
-    config: {
-      systemInstruction: `
-You are an autonomous senior software engineer.
-You implement features, fix issues, and write tests for a WCAG/ADA audit tool.
-You adhere strictly to Node.js ES Modules (import/export).
-Be vigilant with string escaping: do NOT nest raw backticks inside template literals without escaping them (e.g. use \\\` or standard quotes).
-Return ONLY a valid JSON array of objects representing modified or created files.
-`,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.ARRAY,
-        description: 'List of files modified or created',
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            filePath: { type: Type.STRING, description: 'Relative file path' },
-            content: { type: Type.STRING, description: 'Full updated source code' }
-          },
-          required: ['filePath', 'content']
+
+  config: {
+        systemInstruction: `
+  You are an autonomous senior software engineer.
+  You implement features, fix issues, and write tests for a WCAG/ADA audit tool.
+  You adhere strictly to Node.js ES Modules (import/export).
+
+  CRITICAL JAVASCRIPT SYNTAX RULE:
+  Never nest unescaped backticks inside a template literal.
+  INCORRECT:  markdown += \`| \`\${item.id}\` |\`;
+  CORRECT:    markdown += \`| \\\`\${item.id}\\\` |\`;
+  OR:         markdown += '| \`' + item.id + '\` |';
+
+  Return ONLY a valid JSON array of objects representing modified or created files.
+  `,
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.ARRAY,
+          description: 'List of files modified or created',
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              filePath: { type: Type.STRING, description: 'Relative file path' },
+              content: { type: Type.STRING, description: 'Full updated source code' }
+            },
+            required: ['filePath', 'content']
+          }
         }
       }
-    }
-  });
+    });
 
   return JSON.parse(response.text);
 }
@@ -144,6 +151,7 @@ Implement the necessary code and test updates to resolve the issue. Ensure synta
         process.exit(1);
       }
 
+      // === UPDATED RETRY PROMPT START ===
       codebase = getCodebaseContext();
       prompt = `
 Your previous code modifications failed 'npm test'.
@@ -155,8 +163,22 @@ Current Codebase:
 ${codebase}
 
 Fix the exact syntax, runtime, or logic errors identified in the log so that 'npm test' exits with code 0.
+
+CRITICAL SYNTAX GUARD:
+If the error mentions "SyntaxError: Unexpected identifier '$'" or invalid tokens in reporter.js:
+You are nesting raw backticks inside a template literal.
+DO NOT DO THIS:
+markdown += \`| \`\${v.id}\` |\`;
+
+DO THIS INSTEAD (escape inner backticks or use string concatenation):
+markdown += '| \`' + v.id + '\` |';
+OR:
+markdown += \`| \\\`\${v.id}\\\` |\`;
+
 Return ONLY the corrected JSON file list.
 `;
+      // === UPDATED RETRY PROMPT END ===
+
       attempt++;
     }
   }
