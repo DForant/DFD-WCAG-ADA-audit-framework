@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert';
 import fs from 'fs';
 import path from 'path';
-import { generateMarkdownReport, writeReportToFile } from '../reporter.js';
+import { generateMarkdownReport, writeReportToFile, RULE_METADATA } from '../reporter.js';
 
-test('reporter generates valid markdown structure with all sections', () => {
+test('reporter generates valid markdown structure with all sections and testMethod automated', () => {
   const auditData = {
     scanTarget: 'https://example.com',
     timestamp: '2023-01-01T00:00:00.000Z',
@@ -36,6 +36,56 @@ test('reporter generates valid markdown structure with all sections', () => {
   assert.ok(md.includes('## 4. Accessibility Statement'));
   assert.ok(md.includes('color-contrast'));
   assert.ok(md.includes('Assistive Technology Barrier'));
+  assert.ok(md.includes('Test Method'));
+  assert.ok(md.includes('automated'));
+});
+
+test('reporter correctly ingests and translates Level A DOM & semantic metadata rules', () => {
+  const levelARules = [
+    'dlitem',
+    'list',
+    'listitem',
+    'td-headers',
+    'bypass',
+    'skip-link',
+    'document-title',
+    'html-has-lang',
+    'html-lang-valid',
+    'duplicate-id'
+  ];
+
+  for (const ruleId of levelARules) {
+    const metadata = RULE_METADATA[ruleId];
+    assert.ok(metadata, `Rule metadata should exist for ${ruleId}`);
+    assert.strictEqual(typeof metadata.wcagRef, 'string', `WCAG reference should be a string for ${ruleId}`);
+    assert.strictEqual(typeof metadata.impactStatement, 'string', `Impact statement should be a string for ${ruleId}`);
+    assert.ok(metadata.impactStatement.length > 10, `Impact statement for ${ruleId} should be descriptive`);
+  }
+
+  const auditData = {
+    scanTarget: 'https://example.com/semantic',
+    timestamp: '2023-01-01T00:00:00.000Z',
+    summary: { critical: 2, serious: 1, moderate: 0, minor: 0, total: 3 },
+    violations: levelARules.map(id => ({
+      id,
+      impact: 'critical',
+      description: `Violation description for ${id}`,
+      nodes: [
+        {
+          target: ['body'],
+          html: `<div data-test="${id}">Bad Markup</div>`,
+          failureSummary: 'Fix the markup structure'
+        }
+      ]
+    }))
+  };
+
+  const md = generateMarkdownReport(auditData);
+
+  for (const ruleId of levelARules) {
+    assert.ok(md.includes(ruleId), `Markdown report should include rule id ${ruleId}`);
+  }
+  assert.ok(md.includes('automated'), 'Markdown report should include automated test method');
 });
 
 test('writeReportToFile writes REMEDIATION_REPORT.md successfully', () => {
@@ -50,6 +100,7 @@ test('writeReportToFile writes REMEDIATION_REPORT.md successfully', () => {
   assert.ok(fs.existsSync(outPath));
   const content = fs.readFileSync(outPath, 'utf8');
   assert.ok(content.includes('Accessibility Statement'));
+  assert.ok(content.includes('Test Method'));
 
   // Cleanup
   try {
