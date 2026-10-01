@@ -1,12 +1,12 @@
 /**
  * reporter.js - Markdown remediation report compiler
- * Implements FR-REPORT-01 through FR-REPORT-03 & Level A DOM/Semantic Metadata Mapping
+ * Implements FR-REPORT-01 through FR-REPORT-03 & Level A/Form/Media/ARIA Metadata Mapping
  */
 import fs from 'fs';
 import path from 'path';
 
 /**
- * Comprehensive rule metadata mapping for Level A & AA HTML semantics, document structure, and accessibility rules.
+ * Comprehensive rule metadata mapping for Level A & AA HTML semantics, document structure, forms, media, ARIA, and accessibility rules.
  */
 export const RULE_METADATA = {
   'dlitem': {
@@ -53,25 +53,57 @@ export const RULE_METADATA = {
     wcagRef: 'WCAG 1.4.3 (Contrast Minimum)',
     impactStatement: 'Low contrast text is difficult or impossible for users with visual impairments to read.'
   },
-  'image-alt': {
-    wcagRef: 'WCAG 1.1.1 (Non-text Content)',
-    impactStatement: 'Images without alternative text are invisible to screen reader users, omitting vital context and information.'
-  },
   'heading-order': {
     wcagRef: 'WCAG 1.3.1 (Info and Relationships)',
     impactStatement: 'Skipping heading levels disrupts document outline hierarchy for screen reader users navigating by headings.'
   },
+  'image-alt': {
+    wcagRef: 'WCAG 1.1.1 (Non-text Content)',
+    impactStatement: 'Images without alternative text are invisible to screen reader users, omitting vital context and information.'
+  },
+  'area-alt': {
+    wcagRef: 'WCAG 1.1.1 (Non-text Content)',
+    impactStatement: 'Image map areas without alternative text leave assistive technology users unable to identify map navigation links.'
+  },
+  'object-alt': {
+    wcagRef: 'WCAG 1.1.1 (Non-text Content)',
+    impactStatement: 'Embedded objects without alternative text omit critical non-text content rendering for screen reader users.'
+  },
+  'video-caption': {
+    wcagRef: 'WCAG 1.2.2 (Captions - Prerecorded)',
+    impactStatement: 'Prerecorded video content without synchronous captions excludes deaf and hard-of-hearing users from accessing spoken dialogue and auditory cues.'
+  },
+  'audio-caption': {
+    wcagRef: 'WCAG 1.4.2 (Audio Control)',
+    impactStatement: 'Prerecorded audio or background audio playing automatically without appropriate transcripts or user controls disrupts screen reader speech output.'
+  },
+  'blink': {
+    wcagRef: 'WCAG 2.2.2 (Pause, Stop, Hide)',
+    impactStatement: 'Blinking or flashing content can trigger photosensitive seizures and severely distract users with cognitive or attention impairments.'
+  },
   'link-name': {
-    wcagRef: 'WCAG 2.4.4 (Link Purpose)',
+    wcagRef: 'WCAG 2.4.4 (Link Purpose - In Context)',
     impactStatement: 'Links without descriptive text or accessible names leave screen reader users unaware of navigation destinations.'
   },
-  'button-name': {
-    wcagRef: 'WCAG 4.1.2 (Name, Role, Value)',
-    impactStatement: 'Buttons without accessible names prevent assistive technology users from understanding button actions.'
+  'label-title-only': {
+    wcagRef: 'WCAG 2.5.3 (Label in Name)',
+    impactStatement: 'Interactive components whose visible text label does not match their programmatic accessible name (aria-label/labelledby) cause severe confusion for speech recognition users.'
+  },
+  'label': {
+    wcagRef: 'WCAG 3.3.2 (Labels or Instructions)',
+    impactStatement: 'Form controls missing programmatic native <label> associations prevent assistive technology users from understanding required input data.'
   },
   'aria-allowed-attr': {
     wcagRef: 'WCAG 4.1.2 (Name, Role, Value)',
-    impactStatement: 'Using unsupported ARIA attributes on elements invalidates accessibility semantics.'
+    impactStatement: 'Using unsupported ARIA attributes on elements invalidates accessibility semantics, preventing assistive technologies from interpreting component states.'
+  },
+  'aria-required-attr': {
+    wcagRef: 'WCAG 4.1.2 (Name, Role, Value)',
+    impactStatement: 'Missing required ARIA attributes on complex widgets leave assistive technology users unaware of mandatory component state properties.'
+  },
+  'button-name': {
+    wcagRef: 'WCAG 4.1.2 (Name, Role, Value)',
+    impactStatement: 'Buttons without accessible names prevent assistive technology users from understanding button actions due to lack of programmatic name, role, and value support.'
   }
 };
 
@@ -119,14 +151,15 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
     }
 
     case 'duplicate-id': {
-      return originalHtml.replace(/id=[""]([^"]+)[""]/i, 'id="$1-unique"');
+      return originalHtml.replace(/id=[""]([^""]+)[""]/i, 'id="$1-unique"');
     }
 
-    case 'aria-allowed-attr': {
+    case 'aria-allowed-attr':
+    case 'aria-required-attr': {
       if (/aria-selected/i.test(originalHtml) && !/role=[""]tab[""]/i.test(originalHtml)) {
-        return originalHtml.replace(/<button\b/i, '<button role="tab"');
+        return originalHtml.replace(/<button\b/i, '<button role="tab" aria-selected="false"');
       }
-      return originalHtml;
+      return originalHtml.replace(/<([a-zA-Z0-9]+)\b/i, '<$1 aria-describedby="desc-id"');
     }
 
     case 'color-contrast': {
@@ -144,6 +177,40 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
         return originalHtml.replace(/<img\b/i, '<img alt="Descriptive image context"');
       }
       return originalHtml.replace(/alt=[""]\s*[""]/, 'alt="Descriptive image context"');
+    }
+
+    case 'area-alt': {
+      if (!/alt=/i.test(originalHtml)) {
+        return originalHtml.replace(/<area\b/i, '<area alt="Map navigation target"');
+      }
+      return originalHtml.replace(/alt=[""]\s*[""]/, 'alt="Map navigation target"');
+    }
+
+    case 'object-alt': {
+      return '<object>\n  <p>Alternative content description for embedded object.</p>\n  ' + originalHtml + '\n</object>';
+    }
+
+    case 'video-caption': {
+      return originalHtml.replace(/<video\b/i, '<video><track kind="captions" src="captions.vtt" srclang="en" label="English" default></track>');
+    }
+
+    case 'audio-caption': {
+      return '<audio controls>\n  <track kind="captions" src="transcript.vtt" srclang="en" label="English">\n  ' + originalHtml + '\n</audio>';
+    }
+
+    case 'blink': {
+      return originalHtml.replace(/style=[""]([^""]*)blink([^""]*)[""]/gi, 'style="$1none$2"');
+    }
+
+    case 'label': {
+      if (!/<label/i.test(originalHtml) && /<input\b/i.test(originalHtml)) {
+        return '<label for="input-id">Input Label</label>\n' + originalHtml.replace(/<input\b/i, '<input id="input-id"');
+      }
+      return '<label>Label Title\n  ' + originalHtml + '\n</label>';
+    }
+
+    case 'label-title-only': {
+      return originalHtml.replace(/aria-label=[""]([^""]+)[""]/i, 'aria-label="Matching Visible Label Text"');
     }
 
     case 'heading-order': {
@@ -175,7 +242,39 @@ export function generateMarkdownReport(auditData = {}) {
   const target = auditData.scanTarget || auditData.url || 'Unknown Target';
   const timestamp = auditData.timestamp || new Date().toISOString();
   const summary = auditData.summary || { critical: 0, serious: 0, moderate: 0, minor: 0, total: 0 };
-  const violations = auditData.violations || [];
+  const rawViolations = auditData.violations || [];
+
+  // Deduplicate violations mapped to the same WCAG criterion reference
+  const violationsMap = new Map();
+  for (const v of rawViolations) {
+    const id = v.id || 'unknown';
+    const meta = RULE_METADATA[id] || {};
+    const wcagRef = v.wcag || meta.wcagRef || 'WCAG 2.1 AA';
+    
+    // Create unique key based on wcagRef or rule id to deduplicate same criterion failures
+    const dedupKey = `${wcagRef}-${id}`;
+    
+    if (violationsMap.has(dedupKey)) {
+      const existing = violationsMap.get(dedupKey);
+      // Merge nodes
+      const existingNodeKeys = new Set(existing.nodes.map(n => `${n.target}|${n.html}`));
+      const newNodes = Array.isArray(v.nodes) ? v.nodes : [];
+      for (const node of newNodes) {
+        const nodeKey = `${Array.isArray(node.target) ? node.target.join(' ') : (node.target || '')}|${node.html || ''}`;
+        if (!existingNodeKeys.has(nodeKey)) {
+          existingNodeKeys.add(nodeKey);
+          existing.nodes.push(node);
+        }
+      }
+    } else {
+      violationsMap.set(dedupKey, {
+        ...v,
+        wcag: wcagRef
+      });
+    }
+  }
+  
+  const violations = Array.from(violationsMap.values());
 
   let md = '# WCAG / ADA Remediation Report\n\n';
   md += '**Target URL:** ' + target + '  \n';
