@@ -25,6 +25,14 @@ export const RULE_METADATA = {
     wcagRef: 'WCAG 1.3.1 (Info and Relationships)',
     impactStatement: 'Data tables using headers and id attributes must associate data cells correctly so screen readers can accurately read tabular data contexts.'
   },
+  'css-orientation-lock': {
+    wcagRef: 'WCAG 1.3.4 (Orientation)',
+    impactStatement: 'Restricting content orientation to portrait or landscape prevents users with mounted devices or specific ergonomic requirements from viewing content correctly.'
+  },
+  'autocomplete-valid': {
+    wcagRef: 'WCAG 1.3.5 (Identify Input Purpose)',
+    impactStatement: 'Invalid or missing autocomplete attributes on input fields prevent browsers and assistive technologies from correctly predicting and auto-filling user identity and contact data.'
+  },
   'bypass': {
     wcagRef: 'WCAG 2.4.1 (Bypass Blocks)',
     impactStatement: 'Keyboard and screen reader users are forced to tab through repeated navigation blocks on every page without a mechanism to bypass them.'
@@ -45,17 +53,33 @@ export const RULE_METADATA = {
     wcagRef: 'WCAG 3.1.1 (Language of Page)',
     impactStatement: 'Invalid language codes prevent screen readers from reliably determining human language rendering rules.'
   },
+  'valid-lang': {
+    wcagRef: 'WCAG 3.1.2 (Language of Parts)',
+    impactStatement: 'Using invalid language codes on inline content chunks prevents screen readers from shifting speech synthesis dictionaries for foreign words or phrases.'
+  },
   'duplicate-id': {
     wcagRef: 'WCAG 4.1.1 (Parsing)',
     impactStatement: 'Duplicate element IDs disrupt DOM parsing and cause assistive technologies to fail when referencing IDs via aria-labelledby, aria-describedby, or labels.'
   },
   'color-contrast': {
     wcagRef: 'WCAG 1.4.3 (Contrast Minimum)',
-    impactStatement: 'Low contrast text is difficult or impossible for users with visual impairments to read.'
+    impactStatement: 'Low contrast text is difficult or impossible for users with visual impairments to read. Standard text must maintain a contrast ratio of at least 4.5:1 against its background.'
+  },
+  'meta-viewport': {
+    wcagRef: 'WCAG 1.4.4 (Resize text)',
+    impactStatement: 'Disabling scaling or locking zoom via the viewport meta tag prevents users with low vision from magnifying content up to 200% without assistive tools.'
   },
   'heading-order': {
     wcagRef: 'WCAG 1.3.1 (Info and Relationships)',
     impactStatement: 'Skipping heading levels disrupts document outline hierarchy for screen reader users navigating by headings.'
+  },
+  'empty-heading': {
+    wcagRef: 'WCAG 2.4.6 (Headings and Labels)',
+    impactStatement: 'Empty headings provide no context or structural signposts, disorienting screen reader users navigating the document outline.'
+  },
+  'focus-visible': {
+    wcagRef: 'WCAG 2.4.7 (Focus Visible)',
+    impactStatement: 'Removing or hiding keyboard focus indicators leaves keyboard-only users unable to track their active location on the page.'
   },
   'image-alt': {
     wcagRef: 'WCAG 1.1.1 (Non-text Content)',
@@ -133,6 +157,14 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
       return originalHtml.replace(/<td\b/i, '<td headers="header1"');
     }
 
+    case 'css-orientation-lock': {
+      return originalHtml.replace(/orientation:\s*[^;]+/i, 'orientation: auto');
+    }
+
+    case 'autocomplete-valid': {
+      return originalHtml.replace(/<input\b/i, '<input autocomplete="given-name"');
+    }
+
     case 'bypass':
     case 'skip-link': {
       return '<a href="#main-content" class="skip-link">Skip to main content</a>\n' + originalHtml;
@@ -147,43 +179,59 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
     }
 
     case 'html-lang-valid': {
-      return originalHtml.replace(/lang=[""][a-zA-Z0-9\-]+[""]/i, 'lang="en"').replace(/<html\b/i, '<html lang="en"');
+      return originalHtml.replace(/lang=["'][a-zA-Z0-9\-]+["']/i, 'lang="en"').replace(/<html\b/i, '<html lang="en"');
+    }
+
+    case 'valid-lang': {
+      return originalHtml.replace(/lang=["'][a-zA-Z0-9\-]+["']/i, 'lang="en"');
     }
 
     case 'duplicate-id': {
-      return originalHtml.replace(/id=[""]([^""]+)[""]/i, 'id="$1-unique"');
+      return originalHtml.replace(/id=["']([^"']+)["']/i, 'id="$1-unique"');
     }
 
     case 'aria-allowed-attr':
     case 'aria-required-attr': {
-      if (/aria-selected/i.test(originalHtml) && !/role=[""]tab[""]/i.test(originalHtml)) {
+      if (/aria-selected/i.test(originalHtml) && !/role=["']tab["']/i.test(originalHtml)) {
         return originalHtml.replace(/<button\b/i, '<button role="tab" aria-selected="false"');
       }
       return originalHtml.replace(/<([a-zA-Z0-9]+)\b/i, '<$1 aria-describedby="desc-id"');
     }
 
     case 'color-contrast': {
-      if (/style=[""]/i.test(originalHtml)) {
+      if (/style=["']/i.test(originalHtml)) {
         if (/color:\s*[^;"]+/i.test(originalHtml)) {
           return originalHtml.replace(/color:\s*[^;"]+/, 'color: #1f2937');
         }
-        return originalHtml.replace(/style=[""]([^"]*)[""]/, 'style="$1; color: #1f2937;"');
+        return originalHtml.replace(/style=["']([^"]*)["']/, 'style="$1; color: #1f2937;"');
       }
       return originalHtml.replace(/<([a-zA-Z0-9]+)\b/, '<$1 style="color: #1a365d;"');
+    }
+
+    case 'meta-viewport': {
+      return '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
+    }
+
+    case 'empty-heading': {
+      return originalHtml.replace(/<h([1-6])([^>]*)>\s*<\/h\1>/i, '<h$1$2>Section Title</h$1>');
+    }
+
+    case 'focus-visible': {
+      return originalHtml.replace(/<([a-zA-Z0-9]+)\b/i, '<$1 class="focusable-element"');
     }
 
     case 'image-alt': {
       if (!/alt=/i.test(originalHtml)) {
         return originalHtml.replace(/<img\b/i, '<img alt="Descriptive image context"');
       }
-      return originalHtml.replace(/alt=[""]\s*[""]/, 'alt="Descriptive image context"');
+      return originalHtml.replace(/alt=["']\s*["']/, 'alt="Descriptive image context"');
     }
 
     case 'area-alt': {
       if (!/alt=/i.test(originalHtml)) {
         return originalHtml.replace(/<area\b/i, '<area alt="Map navigation target"');
       }
-      return originalHtml.replace(/alt=[""]\s*[""]/, 'alt="Map navigation target"');
+      return originalHtml.replace(/alt=["']\s*["']/, 'alt="Map navigation target"');
     }
 
     case 'object-alt': {
@@ -199,7 +247,7 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
     }
 
     case 'blink': {
-      return originalHtml.replace(/style=[""]([^""]*)blink([^""]*)[""]/gi, 'style="$1none$2"');
+      return originalHtml.replace(/style=["']([^""]*)blink([^""]*)["']/gi, 'style="$1none$2"');
     }
 
     case 'label': {
@@ -210,7 +258,7 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
     }
 
     case 'label-title-only': {
-      return originalHtml.replace(/aria-label=[""]([^""]+)[""]/i, 'aria-label="Matching Visible Label Text"');
+      return originalHtml.replace(/aria-label=["']([^""]+)["']/i, 'aria-label="Matching Visible Label Text"');
     }
 
     case 'heading-order': {
