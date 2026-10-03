@@ -22,7 +22,7 @@ test('reporter generates valid markdown structure with all sections and testMeth
             html: '<div id="header">Low contrast text</div>',
             failureSummary: 'Fix any of the following: Element has insufficient color contrast'
           }
-        ]
+        ] 
       }
     ]
   };
@@ -40,27 +40,28 @@ test('reporter generates valid markdown structure with all sections and testMeth
   assert.ok(md.includes('automated'));
 });
 
-test('reporter correctly ingests and translates Level A DOM & semantic metadata rules', () => {
-  const levelARules = [
-    'dlitem',
-    'list',
-    'listitem',
-    'td-headers',
-    'bypass',
-    'skip-link',
-    'document-title',
-    'html-has-lang',
-    'html-lang-valid',
-    'duplicate-id'
+test('reporter correctly ingests and translates Level A and AA visual, contrast & layout metadata rules', () => {
+  const levelAaRules = [
+    'css-orientation-lock',
+    'autocomplete-valid',
+    'color-contrast',
+    'meta-viewport',
+    'empty-heading',
+    'focus-visible',
+    'valid-lang'
   ];
 
-  for (const ruleId of levelARules) {
+  for (const ruleId of levelAaRules) {
     const metadata = RULE_METADATA[ruleId];
     assert.ok(metadata, `Rule metadata should exist for ${ruleId}`);
     assert.strictEqual(typeof metadata.wcagRef, 'string', `WCAG reference should be a string for ${ruleId}`);
     assert.strictEqual(typeof metadata.impactStatement, 'string', `Impact statement should be a string for ${ruleId}`);
     assert.ok(metadata.impactStatement.length > 10, `Impact statement for ${ruleId} should be descriptive`);
   }
+
+  // Verify specific requirements for color-contrast and meta-viewport
+  assert.ok(RULE_METADATA['color-contrast'].impactStatement.includes('4.5:1'), 'color-contrast impact statement must specify 4.5:1 ratio');
+  assert.ok(RULE_METADATA['meta-viewport'].impactStatement.toLowerCase().includes('pinch-to-zoom') || RULE_METADATA['meta-viewport'].impactStatement.toLowerCase().includes('magnif') || RULE_METADATA['meta-viewport'].impactStatement.toLowerCase().includes('scale'), 'meta-viewport impact statement must specify zoom/scaling impact');
 });
 
 test('reporter correctly maps forms, media, and ARIA rules and distinguishes native vs ARIA label impacts', () => {
@@ -118,7 +119,6 @@ test('reporter deduplicates rules mapped to the same WCAG criterion', () => {
   };
 
   const md = generateMarkdownReport(auditData);
-  // Check that both rule IDs or deduplication is handled smoothly in the report
   assert.ok(md.includes('image-alt') || md.includes('area-alt'));
 });
 
@@ -136,7 +136,6 @@ test('writeReportToFile writes REMEDIATION_REPORT.md successfully', () => {
   assert.ok(content.includes('Accessibility Statement'));
   assert.ok(content.includes('Test Method'));
 
-  // Cleanup
   try {
     fs.unlinkSync(outPath);
   } catch (e) {}
