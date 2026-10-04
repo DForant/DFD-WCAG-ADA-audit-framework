@@ -1,0 +1,16 @@
+{
+  "targets": [
+    {
+      "name": "Home",
+      "url": "https://deanforantdesigns.com"
+    },
+    {
+      "name": "Services",
+      "url": "https://deanforantdesigns.com/#services"
+    },
+    {
+      "name": "Contact",
+      "url": "https://deanforantdesigns.com/#contact"
+    }
+  ]
+}
