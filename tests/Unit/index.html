@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- 2.4.2 (Page Titled): Missing/empty title -->
+    <title></title>
+    <style>
+        /* 1.4.3 (Contrast Minimum): #777777 text on #AAAAAA background (approx 2.1:1 contrast) */
+        .low-contrast-nav {
+            background-color: #AAAAAA;
+            color: #777777;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1.4.3 & 2.4.1: Bypass Blocks failure with 20+ dummy nav links -->
+    <nav class="low-contrast-nav">
+        <a href="#">Home</a>
+        <a href="#">About Us</a>
+        <a href="#">Services 1</a>
+        <a href="#">Services 2</a>
+        <a href="#">Services 3</a>
+        <a href="#">Products 1</a>
+        <a href="#">Products 2</a>
+        <a href="#">Products 3</a>
+        <a href="#">Solutions 1</a>
+        <a href="#">Solutions 2</a>
+        <a href="#">Portfolio 1</a>
+        <a href="#">Portfolio 2</a>
+        <a href="#">Gallery 1</a>
+        <a href="#">Gallery 2</a>
+        <a href="#">Team 1</a>
+        <a href="#">Team 2</a>
+        <a href="#">Careers 1</a>
+        <a href="#">Careers 2</a>
+        <a href="#">Press 1</a>
+        <a href="#">Press 2</a>
+        <a href="#">Contact Us</a>
+    </nav>
+
+    <main id="main-content">
+        <h1>Welcome to the Unstructured Homepage</h1>
+
+        <!-- 1.3.1 (Info and Relationships): Div Soup data table and list -->
+        <div class="div-table" aria-label="Data Table">
+            <div class="div-row">
+                <span class="div-cell">Header 1</span>
+                <span class="div-cell">Header 2</span>
+            </div>
+            <div class="div-row">
+                <span class="div-cell">Data 1</span>
+                <span class="div-cell">Data 2</span>
+            </div>
+        </div>
+
+        <div class="div-list">
+            <span class="div-item">List Item One</span>
+            <span class="div-item">List Item Two</span>
+        </div>
+
+        <!-- 1.1.1 (Non-text Content): Three images with bad alt attributes -->
+        <div>
+            <!-- Missing alt attribute -->
+            <img src="photo1.jpg">
+            <!-- Unhelpful generic alt attribute -->
+            <img src="photo2.jpg" alt="image">
+            <!-- Filename alt attribute -->
+            <img src="photo3.jpg" alt="spacer.gif">
+        </div>
+    </main>
+
+</body>
+</html>
