@@ -6,6 +6,7 @@ import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 import fs from 'fs';
 import path from 'path';
+import { pathToFileURL } from 'url';
 
 export async function runScan(targetUrl) {
   let urlToScan = targetUrl;
@@ -34,6 +35,12 @@ export async function runScan(targetUrl) {
   // 2. Final fallbacks
   if (!urlToScan) {
     urlToScan = process.argv[2] || 'https://deanforantdesigns.com';
+  }
+
+  // 3. Dynamic Local File Resolution
+  if (!urlToScan.startsWith('http://') && !urlToScan.startsWith('https://')) {
+    const absolutePath = path.resolve(process.cwd(), urlToScan);
+    urlToScan = pathToFileURL(absolutePath).href;
   }
 
   console.log(`[scanner] Initiating scan for: ${urlToScan}`);
