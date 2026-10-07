@@ -1,8 +1,5 @@
 {
   "targets": [
-    {
-      "name": "Home",
-      "url": "http://localhost:8080"
-    }
+    "tests/unit/index.html"
   ]
 }
