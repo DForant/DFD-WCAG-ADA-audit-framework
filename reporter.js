@@ -296,6 +296,9 @@ export function generateMarkdownReport(auditData = {}) {
   const violationsMap = new Map();
   for (const v of rawViolations) {
     const id = v.id || 'unknown';
+    if (!RULE_METADATA[id]) {
+      continue;
+    }
     const meta = RULE_METADATA[id] || {};
     const wcagRef = v.wcag || meta.wcagRef || 'WCAG 2.1 AA';
     
