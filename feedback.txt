@@ -1,0 +1,41 @@
+Refactor the Index.html page to ensure all the following WCAG criteria rules fail. 
+
+# WCAG 2.1 Level A/AA Automation Matrix
+
+## 1. Fully Automatable Criteria
+
+The following criteria can be validated programmatically by automated engines (e.g., Axe-core) through deterministic syntax checks, DOM inspection, or mathematical threshold evaluations.
+
+| WCAG SC | Criterion Name | Level | Rule ID / Engine Target | Criteria & Automation Scope |
+| :--- | :--- | :---: | :--- | :--- |
+| **1.4.3** | Contrast (Minimum) | AA | `color-contrast` | Calculates relative luminance ratios between foreground text and background color to verify a minimum threshold of 4.5:1 for standard text and 3:1 for large-scale text[cite: 2, 4, 5]. |
+| **2.2.2** | Pause, Stop, Hide | A | `blink`, `marquee` | Scans the DOM tree for deprecated `<blink>` and `<marquee>` tags that force automated movement or animation without accessible controls[cite: 2]. |
+| **2.4.2** | Page Titled | A | `document-title` | Inspects the document `<head>` to confirm a `<title>` tag exists, is correctly placed, and contains non-whitespace string content[cite: 2, 3, 5]. |
+| **3.1.1** | Language of Page | A | `html-has-lang`, `html-lang-valid` | Validates that the root `<html>` element defines a `lang` attribute and that the value matches standard BCP 47 language code syntax[cite: 2, 3, 5]. |
+| **4.1.1** | Parsing | A | `duplicate-id`, `duplicate-id-active`, `duplicate-id-aria` | Scans the document for duplicate `id` attribute values, unclosed structural tags, and malformed HTML syntax[cite: 2]. |
+| **4.1.2** | Name, Role, Value | A | `aria-allowed-attr`, `aria-required-attr`, `aria-roles`, `aria-valid-attr-value` | Verifies that declared ARIA roles conform to specification, mandatory parent/child role relationships exist, permitted attributes match roles, and referenced element IDs resolve in the DOM[cite: 2]. |
+
+---
+
+## 2. Partially Automatable Criteria
+
+The following criteria have automated rules that flag structural or syntax failures, but cannot verify functional accessibility or semantic accuracy without manual testing.
+
+| WCAG SC | Criterion Name | Level | Automated Rule IDs | Automated Check Scope | Manual Verification Required |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **1.1.1** | Non-text Content | A | `image-alt`, `area-alt`, `object-alt` | Identifies missing `alt` attributes, empty labels, or missing accessible names on `<img>`, `<area>`, and `<object>` elements[cite: 2, 5]. | Verify that alternative text provides equivalent context and avoid placeholder strings (`"image"`, file names) or confirm decorative elements use `alt=""`[cite: 3, 5, 7]. |
+| **1.2.1** | Audio-only and Video-only (Prerecorded) | A | `audio-caption`, `video-caption` | Detects media tags lacking nested `<track kind="captions">` or `<track kind="descriptions">` elements[cite: 2]. | Confirm accurate text transcripts exist and convey equivalent information to the recorded media[cite: 4]. |
+| **1.2.2** | Captions (Prerecorded) | A | `video-caption` | Validates the presence and source reference of caption tracks on `<video>` elements[cite: 2]. | Verify that captions accurately transcribe speech, indicate sound effects, identify speakers, and synchronize with playback[cite: 4]. |
+| **1.3.1** | Info and Relationships | A | `dlitem`, `list`, `listitem`, `td-headers`, `empty-heading`, `heading-order` | Flags broken list markup, unassociated data table cells, empty headings, and skipped heading levels[cite: 2]. | Inspect DOM structure to ensure visual tabular data and lists are not implemented with generic `<div>` or `<span>` markup[cite: 3, 7]. |
+| **1.3.4** | Orientation | AA | `css-orientation-lock` | Flags CSS declarations locking views to portrait or landscape via rotation or media queries[cite: 2]. | Test devices physically to ensure content reflows and controls remain operable across screen rotations. |
+| **1.3.5** | Identify Input Purpose | AA | `autocomplete-valid` | Validates that form fields collecting user data use standard, syntactically correct HTML5 `autocomplete` attributes[cite: 2]. | Confirm whether inputs collect user-specific data and determine where autocomplete attributes must be applied. |
+| **1.4.4** | Resize Text | AA | `meta-viewport` | Checks `<meta name="viewport">` to ensure zoom capabilities are not restricted (`user-scalable=no` or `maximum-scale < 2.0`)[cite: 2]. | Verify that text reflows without truncation, overlapping, or horizontal scrolling when magnified to 200%[cite: 4]. |
+| **1.4.11** | Non-text Contrast | AA | `color-contrast` | Evaluates static color contrast on standalone UI icons and input borders where backgrounds are measurable. | Validate contrast on dynamic focus indicators, hover rings, active states, and custom graphic visuals. |
+| **2.1.1** | Keyboard | A | `aria-hidden-focus`, `nested-interactive`, `tabindex` | Flags interactive handlers assigned to non-focusable tags without `tabindex="0"`, or focusable elements marked with `aria-hidden="true"`. | Perform full manual keyboard passes to ensure all controls are reachable, operable via `Tab`/`Enter`/`Space`, and free of focus traps[cite: 4]. |
+| **2.4.1** | Bypass Blocks | A | `bypass`, `skip-link` | Detects whether the DOM contains landmark elements (`<nav>`, `<main>`, `<header>`) or structural headings[cite: 2]. | Verify that sighted keyboard users have an operable, visible "Skip to Main Content" link to bypass repeated links[cite: 3, 4]. |
+| **2.4.4** | Link Purpose (In Context) | A | `link-name` | Flags `<a>` tags lacking accessible names, text nodes, or nested image alternatives[cite: 2, 5]. | Review link text to ensure destination purpose is clear without ambiguous phrases (e.g., "click here", "read more"). |
+| **2.5.3** | Label in Name | A | `label-content-name-mismatch` | Verifies that visible button/link text matches the accessible name defined in `aria-label` or `aria-labelledby`. | Test with speech input software to confirm voice users can activate components using visible text labels. |
+| **3.1.2** | Language of Parts | AA | `valid-lang` | Validates BCP 47 code syntax when inline `lang` attributes are assigned to specific container tags[cite: 2]. | Confirm that any passages, quotations, or phrases in a secondary language have appropriate inline `lang` tags. |
+| **3.3.2** | Labels or Instructions | A | `label`, `label-title-only` | Verifies that interactive form controls have associated `<label>` tags, explicit `id`/`for` pairings, or ARIA labels[cite: 2, 5]. | Verify that form instructions, format requirements, and error messages are clear and usable for users. |
+
+Also create A test plan to Manually test the remaining items that can not be fully tested via automation

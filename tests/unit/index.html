@@ -1,40 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <!-- 2.4.2 (Page Titled): Empty title -->
+    <!-- 2.4.2 (Page Titled): Empty title to fail document-title -->
     <title></title>
+    <!-- 1.4.4 (Resize Text): Restricting zoom to fail meta-viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
 <body>
-    <!-- 3.1.1 (Language of Page): html tag lacks lang attribute -->
+    <!-- 3.1.1 (Language of Page): html tag lacks lang attribute to fail html-has-lang -->
     
-    <!-- 2.4.1 (Bypass Blocks) & 1.4.3 (Contrast Minimum) -->
-    <nav style="background-color: #AAAAAA; color: #777777; padding: 10px;">
+    <!-- 2.2.2 (Pause, Stop, Hide): Using deprecated blink and marquee tags -->
+    <blink>This text is blinking continuously.</blink>
+    <marquee>This text is scrolling continuously.</marquee>
+
+    <!-- 1.4.3 (Contrast Minimum): Poor contrast ratio to fail color-contrast -->
+    <nav style="background-color: #ffffff; color: #fefefe; padding: 10px;">
         <a href="#">Home</a>
         <a href="#">About</a>
-        <a href="#">Services</a>
-        <a href="#">Products</a>
-        <a href="#">Portfolio</a>
-        <a href="#">Team</a>
-        <a href="#">Careers</a>
-        <a href="#">Blog</a>
-        <a href="#">Press</a>
-        <a href="#">Investors</a>
-        <a href="#">Partners</a>
-        <a href="#">Support</a>
-        <a href="#">FAQ</a>
-        <a href="#">Contact</a>
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
-        <a href="#">Sitemap</a>
-        <a href="#">Security</a>
-        <a href="#">Status</a>
-        <a href="#">Admin</a>
     </nav>
 
     <main id="main-content">
-        <h1>Welcome to Unstructured Homepage</h1>
+        <!-- 4.1.1 (Parsing): Duplicate IDs to fail duplicate-id -->
+        <h1 id="heading-main">Welcome to Unstructured Homepage</h1>
+        <h2 id="heading-main">Duplicate ID Header</h2>
 
-        <!-- 1.3.1 (Info and Relationships): Div soup table and list -->
+        <!-- 4.1.2 (Name, Role, Value): Invalid ARIA attributes to fail aria-required-attr -->
+        <div role="tab" aria-selected="true">Tab Item Missing Controls</div>
+
+        <!-- 1.3.1 (Info and Relationships): Div soup table and list to fail list/listitem/table checks -->
         <div class="div-table">
             <div class="div-row">
                 <span class="div-cell">Header 1</span>
@@ -51,11 +44,33 @@
             <div class="div-list-item">Item Two</div>
         </div>
 
-        <!-- 1.1.1 (Non-text Content): Three <img> elements with alt issues -->
+        <!-- 1.1.1 (Non-text Content): Three <img> elements with alt issues to fail image-alt -->
         <div>
             <img src="photo1.jpg">
             <img src="photo2.jpg" alt="image">
             <img src="photo3.jpg" alt="spacer.gif">
+        </div>
+
+        <!-- 1.2.1 / 1.2.2 (Media): Video without captions to fail video-caption -->
+        <div>
+            <video src="sample.mp4"></video>
+        </div>
+
+        <!-- 1.3.5 (Identify Input Purpose): Form field missing autocomplete -->
+        <div>
+            <label for="email">Email</label>
+            <input type="text" id="email">
+        </div>
+
+        <!-- 2.1.1 (Keyboard): Interactive non-focusable element -->
+        <div onclick="alert('clicked');">Clickable div without tabindex</div>
+
+        <!-- 2.5.3 (Label in Name): Content and aria-label mismatch -->
+        <button aria-label="Submit Application">Send</button>
+
+        <!-- 3.3.2 (Labels or Instructions): Input without label -->
+        <div>
+            <input type="text" id="unlabeled-input">
         </div>
     </main>
 </body>
