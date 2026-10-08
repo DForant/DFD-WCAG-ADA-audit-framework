@@ -1,5 +1,3 @@
-Refactor the Index.html page to ensure all the following WCAG criteria rules fail. 
-
 # WCAG 2.1 Level A/AA Automation Matrix
 
 ## 1. Fully Automatable Criteria
