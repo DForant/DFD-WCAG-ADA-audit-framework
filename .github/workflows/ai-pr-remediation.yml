@@ -49,8 +49,10 @@ jobs:
           git diff origin/${{ github.event.pull_request.base.ref || 'main' }}...HEAD > pr_diff.patch
 
           # Dump review feedback or comment into a context file
-          echo "${{ github.event.review.body || github.event.comment.body }}" > feedback.txt
-
+          cat > feedback.txt << 'EOF'
+          ${{ github.event.review.body || github.event.comment.body }}
+          EOF
+          
       - name: Call Gemini API (AI Studio)
         id: ai_studio
         env:
