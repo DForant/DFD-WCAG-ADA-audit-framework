@@ -179,31 +179,31 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
     }
 
     case 'html-lang-valid': {
-      return originalHtml.replace(/lang=["'][a-zA-Z0-9\-]+["']/i, 'lang="en"').replace(/<html\b/i, '<html lang="en"');
+      return originalHtml.replace(/lang=[""][a-zA-Z0-9\-]+[""]/i, 'lang="en"').replace(/<html\b/i, '<html lang="en"');
     }
 
     case 'valid-lang': {
-      return originalHtml.replace(/lang=["'][a-zA-Z0-9\-]+["']/i, 'lang="en"');
+      return originalHtml.replace(/lang=[""][a-zA-Z0-9\-]+[""]/i, 'lang="en"');
     }
 
     case 'duplicate-id': {
-      return originalHtml.replace(/id=["']([^"']+)["']/i, 'id="$1-unique"');
+      return originalHtml.replace(/id=[""]([^""]+)[""]/i, 'id="$1-unique"');
     }
 
     case 'aria-allowed-attr':
     case 'aria-required-attr': {
-      if (/aria-selected/i.test(originalHtml) && !/role=["']tab["']/i.test(originalHtml)) {
+      if (/aria-selected/i.test(originalHtml) && !/role=[""]tab[""]/i.test(originalHtml)) {
         return originalHtml.replace(/<button\b/i, '<button role="tab" aria-selected="false"');
       }
       return originalHtml.replace(/<([a-zA-Z0-9]+)\b/i, '<$1 aria-describedby="desc-id"');
     }
 
     case 'color-contrast': {
-      if (/style=["']/i.test(originalHtml)) {
+      if (/style=[""]/i.test(originalHtml)) {
         if (/color:\s*[^;"]+/i.test(originalHtml)) {
           return originalHtml.replace(/color:\s*[^;"]+/, 'color: #1f2937');
         }
-        return originalHtml.replace(/style=["']([^"]*)["']/, 'style="$1; color: #1f2937;"');
+        return originalHtml.replace(/style=[""]([^"]*)[""]/, 'style="$1; color: #1f2937;"');
       }
       return originalHtml.replace(/<([a-zA-Z0-9]+)\b/, '<$1 style="color: #1a365d;"');
     }
@@ -224,14 +224,14 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
       if (!/alt=/i.test(originalHtml)) {
         return originalHtml.replace(/<img\b/i, '<img alt="Descriptive image context"');
       }
-      return originalHtml.replace(/alt=["']\s*["']/, 'alt="Descriptive image context"');
+      return originalHtml.replace(/alt=[""]\s*[""]/, 'alt="Descriptive image context"');
     }
 
     case 'area-alt': {
       if (!/alt=/i.test(originalHtml)) {
         return originalHtml.replace(/<area\b/i, '<area alt="Map navigation target"');
       }
-      return originalHtml.replace(/alt=["']\s*["']/, 'alt="Map navigation target"');
+      return originalHtml.replace(/alt=[""]\s*[""]/, 'alt="Map navigation target"');
     }
 
     case 'object-alt': {
@@ -247,7 +247,7 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
     }
 
     case 'blink': {
-      return originalHtml.replace(/style=["']([^""]*)blink([^""]*)["']/gi, 'style="$1none$2"');
+      return originalHtml.replace(/style=[""]([^""]*)blink([^""]*)[""]/gi, 'style="$1none$2"');
     }
 
     case 'label': {
@@ -258,7 +258,7 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
     }
 
     case 'label-title-only': {
-      return originalHtml.replace(/aria-label=["']([^""]+)["']/i, 'aria-label="Matching Visible Label Text"');
+      return originalHtml.replace(/aria-label=[""]([^""]+)[""]/i, 'aria-label="Matching Visible Label Text"');
     }
 
     case 'heading-order': {
@@ -296,6 +296,9 @@ export function generateMarkdownReport(auditData = {}) {
   const violationsMap = new Map();
   for (const v of rawViolations) {
     const id = v.id || 'unknown';
+    if (!RULE_METADATA[id]) {
+      continue;
+    }
     const meta = RULE_METADATA[id] || {};
     const wcagRef = v.wcag || meta.wcagRef || 'WCAG 2.1 AA';
     
