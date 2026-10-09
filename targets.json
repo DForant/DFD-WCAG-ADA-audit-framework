@@ -1,5 +1,5 @@
 {
   "targets": [
-    "tests/unit/index.html"
+    "tests/sample-site/index.html"
   ]
 }
