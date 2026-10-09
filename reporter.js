@@ -203,7 +203,7 @@ function generateFixedSnippet(ruleId, originalHtml = '') {
         if (/color:\s*[^;"]+/i.test(originalHtml)) {
           return originalHtml.replace(/color:\s*[^;"]+/, 'color: #1f2937');
         }
-        return originalHtml.replace(/style=["']([^"]*)["']/, 'style="$1; color: #1f2937;"');
+        return originalHtml.replace(/style=["']([^"']*)["']/, 'style="$1; color: #1f2937;"');
       }
       return originalHtml.replace(/<([a-zA-Z0-9]+)\b/, '<$1 style="color: #1a365d;"');
     }
@@ -296,6 +296,9 @@ export function generateMarkdownReport(auditData = {}) {
   const violationsMap = new Map();
   for (const v of rawViolations) {
     const id = v.id || 'unknown';
+    if (!RULE_METADATA[id]) {
+      continue;
+    }
     const meta = RULE_METADATA[id] || {};
     const wcagRef = v.wcag || meta.wcagRef || 'WCAG 2.1 AA';
     
