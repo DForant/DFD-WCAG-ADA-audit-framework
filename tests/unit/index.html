@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Test page intentionally containing accessibility anti-patterns -->
+</head>
+<body>
+  <!-- html-has-lang: missing lang attribute on html -->
+  <!-- document-title: missing title element -->
+
+  <!-- empty-heading: WCAG 2.4.6 -->
+  <h1></h1>
+
+  <!-- image-alt: WCAG 1.1.1 -->
+  <img src="logo.png">
+
+  <!-- button-name: WCAG 4.1.2 -->
+  <button></button>
+
+  <!-- label: WCAG 3.3.2 -->
+  <input type="text" id="username">
+
+  <!-- duplicate-id: WCAG 4.1.1 -->
+  <div id="main">First</div>
+  <div id="main">Second</div>
+
+  <!-- color-contrast: WCAG 1.4.3 -->
+  <p style="color: #ffffff; background-color: #ffffff;">Low contrast white on white</p>
+
+  <!-- listitem & list: WCAG 1.3.1 -->
+  <li>Orphaned list item</li>
+
+  <!-- aria-allowed-attr: WCAG 4.1.2 -->
+  <input type="text" aria-selected="true">
+</body>
+</html>
