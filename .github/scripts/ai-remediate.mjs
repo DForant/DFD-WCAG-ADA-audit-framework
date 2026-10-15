@@ -21,6 +21,7 @@ async function run() {
 
   const diff = fs.readFileSync(diffPath, 'utf8');
   const feedback = fs.readFileSync(feedbackPath, 'utf8');
+  
 
   const prompt = `
 You are an automated code remediation assistant.
