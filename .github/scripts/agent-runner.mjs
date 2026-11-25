@@ -67,17 +67,29 @@ function runVerificationSuite() {
 }
 
 async function generateWithRetry(ai, params, maxRetries = 4) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await ai.models.generateContent(params);
-    } catch (err) {
-      const isTransient = [429, 500, 503].includes(err?.status);
-      if (!isTransient || attempt === maxRetries) throw err;
-      const delayMs = 5000 * Math.pow(2, attempt - 1);
-      console.warn(`API returned ${err.status}. Retrying in ${delayMs / 1000}s...`);
-      await new Promise((r) => setTimeout(r, delayMs));
+  const modelsToTry = [params.model, 'gemini-2.5-flash'];
+
+  for (const model of modelsToTry) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await ai.models.generateContent({ ...params, model });
+      } catch (err) {
+        const isTransient = [429, 500, 503].includes(err?.status);
+        if (!isTransient) throw err;
+
+        if (attempt === maxRetries) {
+          console.warn(`${model} exhausted retries (${err.status}). Trying next fallback...`);
+          break;
+        }
+
+        const delayMs = 5000 * Math.pow(2, attempt - 1);
+        console.warn(`${model} returned ${err.status}. Retrying in ${delayMs / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
     }
   }
+
+  throw new Error('All models failed due to transient API errors.');
 }
 
 async function askAgent(prompt) {
