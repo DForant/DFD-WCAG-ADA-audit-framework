@@ -1,4 +1,6 @@
-import { Agent, LocalAgentConfig } from '@google/antigravity';
+import { GoogleGenAI, Type } from '@google/genai';
+import fs from 'fs';
+import path from 'path';
 import { execSync } from 'child_process';
 
 const apiKey = process.env.GEMINI_API_KEY;
@@ -11,15 +13,49 @@ if (!apiKey) {
   process.exit(1);
 }
 
-if (!issueNumber || !issueTitle) {
-  console.error('FATAL: ISSUE_NUMBER or ISSUE_TITLE environment variables are missing.');
-  process.exit(1);
+const ai = new GoogleGenAI({ apiKey });
+
+function getCodebaseContext() {
+  const targetFiles = [
+    'package.json',
+    'PROJECT_REQUIREMENTS.md',
+    'scanner.js',
+    'normalizer.js',
+    'reporter.js',
+    'targets.json'
+  ];
+
+  let context = '';
+  for (const file of targetFiles) {
+    if (fs.existsSync(file)) {
+      context += `\n--- File: ${file} ---\n` + fs.readFileSync(file, 'utf8') + '\n';
+    }
+  }
+
+  if (fs.existsSync('tests')) {
+    const testFiles = fs.readdirSync('tests').filter(f => f.endsWith('.js') || f.endsWith('.mjs'));
+    for (const file of testFiles) {
+      context += `\n--- File: tests/${file} ---\n` + fs.readFileSync(`tests/${file}`, 'utf8') + '\n';
+    }
+  }
+
+  return context;
 }
 
-function verifyBuildAndTests() {
-  console.log('Running test verification suite (npm test)...');
+function writeFilesToDisk(fileList) {
+  for (const file of fileList) {
+    const dir = path.dirname(file.filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(file.filePath, file.content, 'utf8');
+    console.log(`[Disk Write] Updated: ${file.filePath}`);
+  }
+}
+
+function runVerificationSuite() {
   try {
-    const output = execSync('npm test', { encoding: 'utf8', stdio: 'inherit' });
+    const output = execSync('npm test', { encoding: 'utf8', stdio: 'pipe' });
     return { success: true, logs: output };
   } catch (error) {
     return {
@@ -29,93 +65,127 @@ function verifyBuildAndTests() {
   }
 }
 
-async function chatWithRetry(agent, prompt, maxRetries = 4) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await agent.chat(prompt);
-    } catch (err) {
-      const status = err?.status || err?.code;
-      const msg = String(err?.message || '');
-      const isTransient =
-        [429, 500, 503].includes(status) ||
-        /503|429|UNAVAILABLE|overloaded|high demand/i.test(msg);
+async function askAgent(prompt) {
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.5-flash-lite',
+    contents: prompt,
 
-      if (!isTransient || attempt === maxRetries) {
-        throw err;
+  config: {
+        systemInstruction: `
+  You are an autonomous senior software engineer.
+  You implement features, fix issues, and write tests for a WCAG/ADA audit tool.
+  You adhere strictly to Node.js ES Modules (import/export).
+
+  CRITICAL JAVASCRIPT SYNTAX RULE:
+  Never nest unescaped backticks inside a template literal.
+  INCORRECT:  markdown += \`| \`\${item.id}\` |\`;
+  CORRECT:    markdown += \`| \\\`\${item.id}\\\` |\`;
+  OR:         markdown += '| \`' + item.id + '\` |';
+
+  Return ONLY a valid JSON array of objects representing modified or created files.
+  `,
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.ARRAY,
+          description: 'List of files modified or created',
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              filePath: { type: Type.STRING, description: 'Relative file path' },
+              content: { type: Type.STRING, description: 'Full updated source code' }
+            },
+            required: ['filePath', 'content']
+          }
+        }
       }
+    });
 
-      const delayMs = 5000 * Math.pow(2, attempt - 1); // 5s, 10s, 20s
-      console.warn(
-        `Transient API error (${status || '503/UNAVAILABLE'}). Retrying in ${delayMs / 1000}s (attempt ${attempt}/${maxRetries})...`
-      );
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-  }
+  return JSON.parse(response.text);
 }
 
 async function run() {
-  console.log(`Starting Antigravity Autonomous Agent for Issue #${issueNumber}: "${issueTitle}"`);
+  console.log(`Starting Self-Healing Agent for Issue #${issueNumber}: "${issueTitle}"`);
 
-  const systemInstructions = `
-You are an autonomous senior software engineer working on a WCAG/ADA accessibility audit tool.
-You adhere strictly to Node.js ES Modules (import/export).
+  let codebase = getCodebaseContext();
+  let prompt = `
+Context Codebase:
+${codebase}
 
-CRITICAL JAVASCRIPT SYNTAX RULE:
-Never nest unescaped backticks inside a template literal.
-INCORRECT:  markdown += \`| \`\${item.id}\` |\`;
-CORRECT:    markdown += \`| \\\`\${item.id}\\\` |\`;
-OR:         markdown += '| \`' + item.id + '\` |';
+-----------------
+Issue To Resolve:
+Title: ${issueTitle}
+Description:
+${issueBody}
+-----------------
 
-OPERATIONAL WORKFLOW:
-1. Review the existing project structure, dependencies, and test setup.
-2. Read the relevant files across scanner.js, normalize.js, reporter.js, targets.json, and the tests/ directory.
-3. Apply the minimal necessary modifications to implement the feature or resolve the bug.
-4. Execute terminal commands (e.g., 'npm test') to inspect, debug, and verify your changes.
-5. Ensure all tests exit cleanly with code 0 before completing your session.
+Implement the necessary code and test updates to resolve the issue. Ensure syntax and logic will pass 'npm test'.
 `;
 
-  const config = new LocalAgentConfig({
-    apiKey,
-    systemInstructions,
-    workspaceRoot: process.cwd(),
-    capabilities: {
-      fileSystem: { allowRead: true, allowWrite: true },
-      terminal: { allowExecute: true }
+  const MAX_ATTEMPTS = 3;
+  let attempt = 1;
+  let passed = false;
+
+  while (attempt <= MAX_ATTEMPTS && !passed) {
+    console.log(`\n=== Self-Correction Cycle: Attempt ${attempt} of ${MAX_ATTEMPTS} ===`);
+
+    const files = await askAgent(prompt);
+    if (!files || files.length === 0) {
+      console.warn('No modifications returned by model.');
+      break;
     }
-  });
 
-  const agent = new Agent(config);
+    writeFilesToDisk(files);
 
-  const prompt = `
-Resolve GitHub Issue #${issueNumber}: "${issueTitle}"
+    console.log('Running test verification suite...');
+    const verification = runVerificationSuite();
 
-Issue Description:
-${issueBody || 'No issue description provided.'}
+    if (verification.success) {
+      console.log('✅ Verification passed. All tests and syntax checks are green.');
+      passed = true;
+    } else {
+      console.warn(`❌ Verification failed on attempt ${attempt}.`);
+      console.warn(`Error Output:\n${verification.logs}`);
 
-Instructions:
-- Examine the codebase, make the necessary file edits, and run 'npm test' to verify your solution.
-- Fix any syntax errors or test regressions you encounter.
+      if (attempt === MAX_ATTEMPTS) {
+        console.error('Reached maximum retry limit without passing tests.');
+        process.exit(1);
+      }
+
+      // === UPDATED RETRY PROMPT START ===
+      codebase = getCodebaseContext();
+      prompt = `
+Your previous code modifications failed 'npm test'.
+
+Failure Log:
+${verification.logs}
+
+Current Codebase:
+${codebase}
+
+Fix the exact syntax, runtime, or logic errors identified in the log so that 'npm test' exits with code 0.
+
+CRITICAL SYNTAX GUARD:
+If the error mentions "SyntaxError: Unexpected identifier '$'" or invalid tokens in reporter.js:
+You are nesting raw backticks inside a template literal.
+DO NOT DO THIS:
+markdown += \`| \`\${v.id}\` |\`;
+
+DO THIS INSTEAD (escape inner backticks or use string concatenation):
+markdown += '| \`' + v.id + '\` |';
+OR:
+markdown += \`| \\\`\${v.id}\\\` |\`;
+
+Return ONLY the corrected JSON file list.
 `;
+      // === UPDATED RETRY PROMPT END ===
 
-  try {
-    const response = await chatWithRetry(agent, prompt);
-    console.log('\n--- Antigravity Agent Execution Summary ---');
-    console.log(await response.text());
-  } catch (err) {
-    console.error('Antigravity Agent encountered an execution failure:', err);
-    process.exit(1);
-  } finally {
-    await agent.close();
+      attempt++;
+    }
   }
 
-  // Deterministic local gate: Enforce that tests pass before allowing PR creation
-  const gateCheck = verifyBuildAndTests();
-  if (!gateCheck.success) {
-    console.error('Final verification check failed after agent finished execution.');
+  if (!passed) {
     process.exit(1);
   }
-
-  console.log('✅ Final verification gate passed cleanly.');
 }
 
 run();
