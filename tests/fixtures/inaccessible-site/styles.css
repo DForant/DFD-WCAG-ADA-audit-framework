@@ -1,0 +1,26 @@
+/* styles.css - Inaccessible benchmark stylesheet */
+body {
+  background-color: #ffffff;
+  color: #cccccc;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+*:focus {
+  outline: none !important;
+}
+@media screen and (orientation: landscape) {
+  body {
+    transform: rotate(0deg);
+  }
+}
+nav {
+  background: #f1f5f9;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+nav a {
+  margin-right: 15px;
+  color: #1a365d;
+  text-decoration: none;
+}
