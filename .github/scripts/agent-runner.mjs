@@ -67,7 +67,7 @@ function runVerificationSuite() {
 }
 
 async function generateWithRetry(ai, params, maxRetries = 4) {
-  const modelsToTry = [params.model, 'gemini-2.5-flash-lite'];
+  const modelsToTry = [params.model, 'gemini-3.1-flash-lite'];
 
   for (const model of modelsToTry) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
