@@ -157,7 +157,7 @@ ${issueBody}
 Implement the necessary code and test updates to resolve the issue. Ensure syntax and logic will pass 'npm test'.
 `;
 
-  const MAX_ATTEMPTS = 3;
+  const MAX_ATTEMPTS = 5;
   let attempt = 1;
   let passed = false;
 
