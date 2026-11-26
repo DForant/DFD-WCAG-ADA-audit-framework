@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { generateFixedSnippet } from './utils/remediation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dictionaryPath = path.resolve(__dirname, 'data/wcag-rule-dictionary.json');
@@ -46,140 +47,6 @@ export const RULE_METADATA = new Proxy(rawDictionary, {
     };
   }
 });
-
-function generateFixedSnippet(ruleId, originalHtml = '') {
-  if (!originalHtml) return '<!-- Corrected markup unavailable -->';
-
-  const entry = rawDictionary[ruleId];
-  if (entry && entry.compliantCodeExample) {
-    if (ruleId === 'meta-viewport') {
-      return entry.compliantCodeExample;
-    }
-  }
-
-  switch (ruleId) {
-    case 'dlitem': {
-      if (!/<dt>|<dd>/i.test(originalHtml)) {
-        return '<dl>\n  <dt>Term</dt>\n  <dd>' + originalHtml.replace(/<([a-zA-Z0-9]+)[^>]*>/, '<$1>') + '</dd>\n</dl>';
-      }
-      return '<dl>\n  ' + originalHtml + '\n</dl>';
-    }
-    case 'list': {
-      return '<ul>\n  <li>' + originalHtml.replace(/<([a-zA-Z0-9]+)[^>]*>/, '<$1>') + '</li>\n</ul>';
-    }
-    case 'listitem': {
-      return '<ul>\n  <li>' + originalHtml + '</li>\n</ul>';
-    }
-    case 'td-headers': {
-      return originalHtml.replace(/<td\b/i, '<td headers="header1"');
-    }
-    case 'css-orientation-lock': {
-      return originalHtml.replace(/orientation:\s*[^;]+/i, 'orientation: auto');
-    }
-    case 'autocomplete-valid': {
-      return originalHtml.replace(/<input\b/i, '<input autocomplete="given-name"');
-    }
-    case 'bypass':
-    case 'skip-link': {
-      return '<a href="#main-content" class="skip-link">Skip to main content</a>\n' + originalHtml;
-    }
-    case 'document-title': {
-      return '<head>\n  <title>Accessible Page Title - Organization</title>\n  ' + originalHtml + '\n</head>';
-    }
-    case 'html-has-lang': {
-      return originalHtml.replace(/<html\b/i, '<html lang="en"');
-    }
-    case 'html-lang-valid': {
-      return originalHtml.replace(/lang=["'][a-zA-Z0-9\-]+["']/i, 'lang="en"').replace(/<html\b/i, '<html lang="en"');
-    }
-    case 'valid-lang': {
-      return originalHtml.replace(/lang=["'][a-zA-Z0-9\-]+["']/i, 'lang="en"');
-    }
-    case 'duplicate-id': {
-      return originalHtml.replace(/id=["']([^"']+)["']/i, 'id="$1-unique"');
-    }
-    case 'aria-allowed-attr':
-    case 'aria-required-attr': {
-      if (/aria-selected/i.test(originalHtml) && !/role=["']tab["']/i.test(originalHtml)) {
-        return originalHtml.replace(/<button\b/i, '<button role="tab" aria-selected="false"');
-      }
-      return originalHtml.replace(/<([a-zA-Z0-9]+)\b/i, '<$1 aria-describedby="desc-id"');
-    }
-    case 'color-contrast': {
-      if (/style=["']/i.test(originalHtml)) {
-        if (/color:\s*[^;"]+/i.test(originalHtml)) {
-          return originalHtml.replace(/color:\s*[^;"]+/, 'color: #1f2937');
-        }
-        return originalHtml.replace(/style=["']([^"]*)["']/, 'style="$1; color: #1f2937;"');
-      }
-      return originalHtml.replace(/<([a-zA-Z0-9]+)\b/, '<$1 style="color: #1a365d;"');
-    }
-    case 'meta-viewport': {
-      return '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
-    }
-    case 'empty-heading': {
-      return originalHtml.replace(/<h([1-6])([^>]*)>\s*<\/h\1>/i, '<h$1$2>Section Title</h$1>');
-    }
-    case 'focus-visible': {
-      return originalHtml.replace(/<([a-zA-Z0-9]+)\b/i, '<$1 class="focusable-element"');
-    }
-    case 'image-alt': {
-      if (!/alt=/i.test(originalHtml)) {
-        return originalHtml.replace(/<img\b/i, '<img alt="Descriptive image context"');
-      }
-      return originalHtml.replace(/alt=["']\s*["']/, 'alt="Descriptive image context"');
-    }
-    case 'area-alt': {
-      if (!/alt=/i.test(originalHtml)) {
-        return originalHtml.replace(/<area\b/i, '<area alt="Map navigation target"');
-      }
-      return originalHtml.replace(/alt=["']\s*["']/, 'alt="Map navigation target"');
-    }
-    case 'object-alt': {
-      return '<object>\n  <p>Alternative content description for embedded object.</p>\n  ' + originalHtml + '\n</object>';
-    }
-    case 'video-caption': {
-      return originalHtml.replace(/<video\b/i, '<video><track kind="captions" src="captions.vtt" srclang="en" label="English" default></track>');
-    }
-    case 'audio-caption': {
-      return '<audio controls>\n  <track kind="captions" src="transcript.vtt" srclang="en" label="English">\n  ' + originalHtml + '\n</audio>';
-    }
-    case 'blink': {
-      return originalHtml.replace(/style=["']([^""]*)blink([^""]*)["']/gi, 'style="$1none$2"');
-    }
-    case 'label': {
-      if (!/<label/i.test(originalHtml) && /<input\b/i.test(originalHtml)) {
-        return '<label for="input-id">Input Label</label>\n' + originalHtml.replace(/<input\b/i, '<input id="input-id"');
-      }
-      return '<label>Label Title\n  ' + originalHtml + '\n</label>';
-    }
-    case 'label-title-only': {
-      return originalHtml.replace(/aria-label=["']([^""]+)["']/i, 'aria-label="Matching Visible Label Text"');
-    }
-    case 'heading-order': {
-      return originalHtml
-        .replace(/<h[3-6]\b/i, '<h2')
-        .replace(/<\/h[3-6]>/i, '</h2>');
-    }
-    case 'link-name': {
-      if (originalHtml.includes('><')) {
-        return originalHtml.replace('><', '>Read Full Content<');
-      }
-      return originalHtml.replace(/<a\b/i, '<a aria-label="Navigation target"');
-    }
-    case 'button-name': {
-      if (!/aria-label/i.test(originalHtml)) {
-        return originalHtml.replace(/<button\b/i, '<button aria-label="Action button"');
-      }
-      return originalHtml;
-    }
-    default:
-      if (entry && entry.compliantCodeExample) {
-        return entry.compliantCodeExample;
-      }
-      return originalHtml.replace(/>/, ' data-wcag-fix="' + ruleId + '">');
-  }
-}
 
 export function generateMarkdownReport(auditData = {}) {
   const target = auditData.scanTarget || auditData.url || 'Unknown Target';
@@ -295,4 +162,4 @@ export function writeReportToFile(auditData, outputPath = 'REMEDIATION_REPORT.md
   return resolvedPath;
 }
 
-export default { RULE_METADATA, generateMarkdownReport, writeReportToFile };
+export default { RULE_METADATA, generateMarkdownReport, writeReportToFile, generateFixedSnippet };
