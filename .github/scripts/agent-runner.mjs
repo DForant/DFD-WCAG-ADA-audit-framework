@@ -97,8 +97,8 @@ async function askAgent(prompt) {
     model: 'gemini-3.5-flash-lite',
     contents: prompt,
 
-  config: {
-        systemInstruction: `
+    config: {
+      systemInstruction: `
   You are an autonomous senior software engineer.
   You implement features, fix issues, and write tests for a WCAG/ADA audit tool.
   You adhere strictly to Node.js ES Modules (import/export).
@@ -109,23 +109,32 @@ async function askAgent(prompt) {
   CORRECT:    markdown += \`| \\\`\${item.id}\\\` |\`;
   OR:         markdown += '| \`' + item.id + '\` |';
 
+  CRITICAL NODE.JS ESM PATH RULE:
+  Never pass import.meta.url directly to path.dirname(), path.join(), or path.resolve().
+  INCORRECT: path.resolve(path.dirname(import.meta.url), '../data/file.json')
+  CORRECT:
+    import { fileURLToPath } from 'url';
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const filePath = path.resolve(__dirname, '../data/file.json');
+  OR use: path.resolve(process.cwd(), 'data/file.json')
+
   Return ONLY a valid JSON array of objects representing modified or created files.
   `,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.ARRAY,
-          description: 'List of files modified or created',
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              filePath: { type: Type.STRING, description: 'Relative file path' },
-              content: { type: Type.STRING, description: 'Full updated source code' }
-            },
-            required: ['filePath', 'content']
-          }
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.ARRAY,
+        description: 'List of files modified or created',
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            filePath: { type: Type.STRING, description: 'Relative file path' },
+            content: { type: Type.STRING, description: 'Full updated source code' }
+          },
+          required: ['filePath', 'content']
         }
       }
-    });
+    }
+  });
 
   return JSON.parse(response.text);
 }
