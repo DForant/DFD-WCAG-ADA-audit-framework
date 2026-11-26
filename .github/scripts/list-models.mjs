@@ -20,3 +20,5 @@ async function listModels() {
     console.error("Error listing models:", error);
   }
 }
+
+listModels();
