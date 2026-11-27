@@ -158,7 +158,7 @@
     "wcagLevel": "AA",
     "category": "Visual Constraints",
     "title": "Contrast Minimum",
-    "plainDescription": "Low contrast text is difficult or impossible for users with visual impairments to read. color-contrast impact statement must specify 4.5:1 ratio requirement against its background.",
+    "plainDescription": "Low contrast text is difficult or impossible for users with visual impairments to read. Text must maintain a minimum 4.5:1 contrast ratio against its background.",
     "severity": "serious",
     "processType": "automated",
     "remediationSummary": "Adjust text and background colors to achieve a contrast ratio of at least 4.5:1 for standard text.",
