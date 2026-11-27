@@ -68,14 +68,23 @@ export function generateFixedSnippet(ruleId, originalHtml = '') {
       return '<a href="#main-content" class="skip-link">Skip to main content</a>\n' + safeHtml;
     }
     case 'document-title': {
+      if (/<head\b[^>]*>/i.test(safeHtml)) {
+        return safeHtml.replace(
+          /(<head\b[^>]*>)/i,
+          '$1\n  <title>Accessible Page Title - Organization</title>'
+        );
+      }
       return '<head>\n  <title>Accessible Page Title - Organization</title>\n  ' + safeHtml + '\n</head>';
     }
     case 'html-has-lang': {
       return safeHtml.replace(/<html\b/i, '<html lang="en"');
     }
     case 'html-lang-valid': {
-      return safeHtml.replace(/lang=["'][a-zA-Z0-9\-]+["']/i, 'lang="en"').replace(/<html\b/i, '<html lang="en"');
-    }
+      if (/\blang=["'][^"']*["']/i.test(safeHtml)) {
+        return safeHtml.replace(/\blang=["'][^"']*["']/i, 'lang="en"');
+      }
+      return safeHtml.replace(/<html\b/i, '<html lang="en"');
+    }    
     case 'valid-lang': {
       return safeHtml.replace(/lang=["'][a-zA-Z0-9\-]+["']/i, 'lang="en"');
     }
@@ -120,14 +129,32 @@ export function generateFixedSnippet(ruleId, originalHtml = '') {
       return safeHtml.replace(/alt=["']\s*["']/, 'alt="Map navigation target"');
     }
     case 'object-alt': {
+      if (/<object\b[^>]*>/i.test(safeHtml)) {
+        return safeHtml.replace(
+          /(<object\b[^>]*>)/i,
+          '$1\n  <p>Alternative content description for embedded object.</p>'
+        );
+      }
       return '<object>\n  <p>Alternative content description for embedded object.</p>\n  ' + safeHtml + '\n</object>';
-    }
+    }    
     case 'video-caption': {
-      return safeHtml.replace(/<video\b/i, '<video><track kind="captions" src="captions.vtt" srclang="en" label="English" default></track>');
+      if (/<video\b[^>]*>/i.test(safeHtml)) {
+        return safeHtml.replace(
+          /(<video\b[^>]*>)/i,
+          '$1\n  <track kind="captions" src="captions.vtt" srclang="en" label="English" default>'
+        );
+      }
+      return '<video controls>\n  <track kind="captions" src="captions.vtt" srclang="en" label="English" default>\n  ' + safeHtml + '\n</video>';
     }
     case 'audio-caption': {
+      if (/<audio\b[^>]*>/i.test(safeHtml)) {
+        return safeHtml.replace(
+          /(<audio\b[^>]*>)/i,
+          '$1\n  <track kind="captions" src="transcript.vtt" srclang="en" label="English">'
+        );
+      }
       return '<audio controls>\n  <track kind="captions" src="transcript.vtt" srclang="en" label="English">\n  ' + safeHtml + '\n</audio>';
-    }
+    }    
     case 'blink': {
       return safeHtml.replace(/style=["']([^""]*)blink([^""]*)["']/gi, 'style="$1none$2"');
     }
