@@ -56,18 +56,22 @@ export function generateMarkdownReport(auditData = {}) {
 
   const violationsMap = new Map();
   for (const v of rawViolations) {
-    const id = v.id || 'unknown';
+    const id = v.id || v.ruleId || 'unknown';
     const meta = RULE_METADATA[id] || {};
     const wcagRef = v.wcag || meta.wcagRef || 'WCAG 2.1 AA';
-    
     const dedupKey = `${wcagRef}-${id}`;
-    
+
+    const normalizedNodes = (Array.isArray(v.nodes) ? v.nodes : []).map(n => ({
+      ...n,
+      target: Array.isArray(n.target) ? n.target.join(' ') : (n.target || n.selector || ''),
+      html: n.html || n.originalHtml || ''
+    }));
+
     if (violationsMap.has(dedupKey)) {
       const existing = violationsMap.get(dedupKey);
       const existingNodeKeys = new Set(existing.nodes.map(n => `${n.target}|${n.html}`));
-      const newNodes = Array.isArray(v.nodes) ? v.nodes : [];
-      for (const node of newNodes) {
-        const nodeKey = `${Array.isArray(node.target) ? node.target.join(' ') : (node.target || '')}|${node.html || ''}`;
+      for (const node of normalizedNodes) {
+        const nodeKey = `${node.target}|${node.html}`;
         if (!existingNodeKeys.has(nodeKey)) {
           existingNodeKeys.add(nodeKey);
           existing.nodes.push(node);
@@ -76,11 +80,14 @@ export function generateMarkdownReport(auditData = {}) {
     } else {
       violationsMap.set(dedupKey, {
         ...v,
-        wcag: wcagRef
+        id,
+        impact: v.impact || v.severity || meta.severity || 'moderate',
+        description: v.description || v.plainDescription || meta.plainDescription || 'N/A',
+        wcag: wcagRef,
+        nodes: normalizedNodes
       });
     }
-  }
-  
+  }  
   const violations = Array.from(violationsMap.values());
 
   let md = '# WCAG / ADA Remediation Report\n\n';
@@ -141,7 +148,7 @@ export function generateMarkdownReport(auditData = {}) {
 
         md += '#### Recommended Remediation:\n\n';
         const problemHtml = v.nodes[0].html || '<!-- Node snippet unavailable -->';
-        const fixedHtml = generateFixedSnippet(v.id, problemHtml);
+        const fixedHtml = v.nodes[0].fixedSnippet || generateFixedSnippet(v.id, problemHtml);
         md += '```html\n' + fixedHtml + '\n```\n\n';
       }
     });
