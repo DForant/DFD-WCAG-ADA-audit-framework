@@ -38,47 +38,52 @@ export async function runScan(targetUrl) {
   }
 
   // 3. Dynamic Local File Resolution
-  if (!urlToScan.startsWith('http://') && !urlToScan.startsWith('https://')) {
+  if (!urlToScan.startsWith('http://') && !urlToScan.startsWith('https://') && !urlToScan.startsWith('file://')) {
     const absolutePath = path.resolve(process.cwd(), urlToScan);
     urlToScan = pathToFileURL(absolutePath).href;
+  } else if (urlToScan.startsWith('file://') === false && path.isAbsolute(urlToScan)) {
+    urlToScan = pathToFileURL(urlToScan).href;
   }
 
   console.log(`[scanner] Initiating scan for: ${urlToScan}`);
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    viewport: { width: 1440, height: 900 }
-  });
-  const page = await context.newPage();
-
+  let browser;
   try {
-    // Navigate with a resilient load strategy
-    await page.goto(urlToScan, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
-    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
-    await page.waitForTimeout(2000);
-  } catch (err) {
-    console.error(`[scanner] Fatal navigation error to ${urlToScan}: ${err.message}`);
-    await browser.close();
-    throw new Error(`Failed to navigate to target URL: ${urlToScan} (${err.message})`);
+    browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 }
+    });
+    const page = await context.newPage();
+
+    try {
+      await page.goto(urlToScan, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+    } catch (err) {
+      console.error(`[scanner] Fatal navigation error to ${urlToScan}: ${err.message}`);
+      throw new Error(`Failed to navigate to target URL: ${urlToScan} (${err.message})`);
+    }
+
+    const axeResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+
+    const finalUrl = page.url();
+
+    return {
+      url: finalUrl || urlToScan,
+      timestamp: new Date().toISOString(),
+      violations: axeResults.violations || [],
+      passes: axeResults.passes || [],
+      incomplete: axeResults.incomplete || [],
+      inapplicable: axeResults.inapplicable || []
+    };
+  } finally {
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
   }
-
-  // Run Axe after page stabilization
-  const axeResults = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze();
-
-  const finalUrl = page.url();
-  await browser.close();
-
-  return {
-    url: finalUrl || urlToScan,
-    timestamp: new Date().toISOString(),
-    violations: axeResults.violations || [],
-    passes: axeResults.passes || [],
-    incomplete: axeResults.incomplete || [],
-    inapplicable: axeResults.inapplicable || []
-  };
 }
 
 export default { runScan };
