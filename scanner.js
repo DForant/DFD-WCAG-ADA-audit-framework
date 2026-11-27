@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 import fs from 'fs';
 import path from 'path';
-import { pathToFileURL } from 'url';
+import { pathToFileURL, fileURLToPath } from 'url';
 
 export async function runScan(targetUrl) {
   let urlToScan = targetUrl;
@@ -84,6 +84,21 @@ export async function runScan(targetUrl) {
       await browser.close().catch(() => {});
     }
   }
+}
+
+const isDirectRun =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isDirectRun) {
+  runScan(process.argv[2])
+    .then((result) => {
+      console.log(JSON.stringify(result, null, 2));
+    })
+    .catch((err) => {
+      console.error('[scanner] CLI execution failed:', err.message);
+      process.exit(1);
+    });
 }
 
 export default { runScan };
