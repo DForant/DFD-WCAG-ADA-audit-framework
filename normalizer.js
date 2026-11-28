@@ -1,13 +1,28 @@
 /**
- * normalizer.js - AST/DOM axe-core payload normalizer
- * Implements FR-DATA-01 through FR-DATA-03
+ * normalizer.js - Normalizes raw axe scan results
+ * Implements normalization, rule dictionary merging, and remediation snippet attachment.
  */
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { generateFixedSnippet } from './utils/remediation.js';
 
-export function normalizeAxeResults(rawResults = {}) {
-  const violations = Array.isArray(rawResults.violations) ? rawResults.violations : [];
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const dictionaryPath = path.resolve(__dirname, 'data/wcag-rule-dictionary.json');
 
+let rawDictionary = {};
+try {
+  if (fs.existsSync(dictionaryPath)) {
+    rawDictionary = JSON.parse(fs.readFileSync(dictionaryPath, 'utf8'));
+  }
+} catch (err) {
+  console.warn('[normalizer] Failed to load wcag-rule-dictionary.json:', err.message);
+}
+
+export const RULE_METADATA = rawDictionary;
+
+export function normalizeAxeResults(raw) {
+  const violations = raw.violations || [];
   const summary = {
     critical: 0,
     serious: 0,
@@ -16,67 +31,60 @@ export function normalizeAxeResults(rawResults = {}) {
     total: 0
   };
 
-  const normalizedViolationsMap = new Map();
-
   for (const v of violations) {
-    const impact = v.impact || 'moderate';
-    if (summary[impact] !== undefined) {
-      summary[impact] += 1;
-    }
-    summary.total += 1;
-
-    const tags = Array.isArray(v.tags) ? v.tags : [];
-    const wcagTags = tags.filter(t => t.startsWith('wcag') || t.startsWith('section508'));
-    const wcag = wcagTags.length > 0 ? wcagTags.join(', ') : (tags[0] || 'unknown');
-
-    const rawNodes = Array.isArray(v.nodes) ? v.nodes : [];
-    const nodes = rawNodes.map(node => ({
-      target: Array.isArray(node.target) ? node.target.join(' ') : (node.target || ''),
-      html: node.html || '',
-      failureSummary: node.failureSummary || ''
-    }));
-
-    const violationKey = `${v.id}-${impact}`;
-    if (normalizedViolationsMap.has(violationKey)) {
-      const existing = normalizedViolationsMap.get(violationKey);
-      // Merge nodes while avoiding duplicates based on target + html
-      const existingNodeKeys = new Set(existing.nodes.map(n => `${n.target}|${n.html}`));
-      for (const node of nodes) {
-        const nodeKey = `${node.target}|${node.html}`;
-        if (!existingNodeKeys.has(nodeKey)) {
-          existingNodeKeys.add(nodeKey);
-          existing.nodes.push(node);
-        }
-      }
-    } else {
-      normalizedViolationsMap.set(violationKey, {
-        id: v.id || 'unknown',
-        impact: impact,
-        wcag: wcag,
-        description: v.description || '',
-        helpUrl: v.helpUrl || '',
-        nodes: nodes
-      });
-    }
+    const impact = (v.impact || 'moderate').toLowerCase();
+    if (impact === 'critical') summary.critical++;
+    else if (impact === 'serious') summary.serious++;
+    else if (impact === 'moderate') summary.moderate++;
+    else if (impact === 'minor') summary.minor++;
+    summary.total++;
   }
 
-  const normalizedViolations = Array.from(normalizedViolationsMap.values());
-
-  const normalized = {
-    scanTarget: rawResults.url || rawResults.scanTarget || 'unknown',
-    timestamp: rawResults.timestamp || new Date().toISOString(),
+  return {
+    scanTarget: raw.url || raw.scanTarget || 'Unknown Target',
+    timestamp: raw.timestamp || new Date().toISOString(),
     summary,
-    violations: normalizedViolations
+    violations: violations.map(v => {
+      const meta = RULE_METADATA[v.id] || {
+        wcagId: '2.1',
+        wcagLevel: 'AA',
+        category: 'General',
+        title: v.id,
+        plainDescription: v.description || 'Accessibility barrier detected.',
+        severity: v.impact || 'moderate',
+        processType: 'automated',
+        remediationSummary: 'Review and fix element markup.',
+        compliantCodeExample: '<!-- Example unavailable -->'
+      };
+
+      const nodes = (v.nodes || []).map(node => {
+        const selector = Array.isArray(node.target) ? node.target.join(' ') : (node.target || '');
+        const originalHtml = node.html || '';
+        const fixedSnippet = generateFixedSnippet(v.id, originalHtml);
+        return {
+          selector,
+          originalHtml,
+          fixedSnippet,
+          failureSummary: node.failureSummary || ''
+        };
+      });
+
+      return {
+        ruleId: v.id,
+        wcagId: meta.wcagId,
+        wcagLevel: meta.wcagLevel,
+        severity: v.impact || meta.severity || 'moderate',
+        plainDescription: meta.plainDescription || v.description,
+        remediationSummary: meta.remediationSummary,
+        helpUrl: v.helpUrl || '',
+        nodes
+      };
+    })
   };
-
-  try {
-    const outputPath = path.resolve(process.cwd(), 'audit-results.json');
-    fs.writeFileSync(outputPath, JSON.stringify(normalized, null, 2), 'utf8');
-  } catch (err) {
-    // Silently handle or fallback if file write restricted in certain environments
-  }
-
-  return normalized;
 }
 
-export default { normalizeAxeResults };
+export function normalizeResults(rawAxeOutput) {
+  return normalizeAxeResults(rawAxeOutput);
+}
+
+export default { normalizeAxeResults, normalizeResults, RULE_METADATA };
