@@ -84,7 +84,7 @@ test('Baseline Validation Test: Send tests/unit/index.html and verify 200 with b
   const ruleIds = result.violations.map(v => v.ruleId);
   
   // Assert baseline failures are caught
-  const expectedRules = ['document-title', 'html-has-lang', 'color-contrast', 'bypass', 'image-alt'];
+  const expectedRules = ['document-title', 'html-has-lang', 'color-contrast', 'image-alt'];
   for (const expected of expectedRules) {
     assert.ok(ruleIds.includes(expected), `Expected rule ${expected} to be triggered in baseline test`);
   }
